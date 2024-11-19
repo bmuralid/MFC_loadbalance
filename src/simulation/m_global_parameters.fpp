@@ -281,10 +281,11 @@ module m_global_parameters
     !! The number of cells that are necessary to be able to store enough boundary
     !! conditions data to march the solution in the physical computational domain
     !! to the next time-step.
+    integer :: buff_size_lb
 
     integer :: startx, starty, startz
 
-    !$acc declare create(sys_size, buff_size, startx, starty, startz, E_idx, T_idx, gamma_idx, pi_inf_idx, alf_idx, n_idx, stress_idx, species_idx)
+    !$acc declare create(sys_size, buff_size, buff_size_lb, startx, starty, startz, E_idx, T_idx, gamma_idx, pi_inf_idx, alf_idx, n_idx, stress_idx, species_idx)
 
     ! END: Simulation Algorithm Parameters =====================================
 
@@ -1020,6 +1021,7 @@ contains
             buff_size = weno_polyn + 2
         end if
 
+        buff_size_lb = 10  ! NTBC
         if (probe_wrt) then
             fd_number = max(1, fd_order/2)
         end if
@@ -1028,9 +1030,9 @@ contains
         idwint(1)%beg = 0; idwint(2)%beg = 0; idwint(3)%beg = 0
         idwint(1)%end = m; idwint(2)%end = n; idwint(3)%end = p
 
-        idwbuff(1)%beg = -buff_size
-        if (num_dims > 1) then; idwbuff(2)%beg = -buff_size; else; idwbuff(2)%beg = 0; end if
-        if (num_dims > 2) then; idwbuff(3)%beg = -buff_size; else; idwbuff(3)%beg = 0; end if
+        idwbuff(1)%beg = -buff_size - buff_size_lb
+        if (num_dims > 1) then; idwbuff(2)%beg = -buff_size - buff_size_lb; else; idwbuff(2)%beg = 0; end if
+        if (num_dims > 2) then; idwbuff(3)%beg = -buff_size - buff_size_lb; else; idwbuff(3)%beg = 0; end if
 
         idwbuff(1)%end = idwint(1)%end - idwbuff(1)%beg
         idwbuff(2)%end = idwint(2)%end - idwbuff(2)%beg
@@ -1046,14 +1048,14 @@ contains
                 & idwbuff(3)%beg:idwbuff(3)%end))
         end if
 
-        startx = -buff_size
+        startx = -buff_size - buff_size_lb
         starty = 0
         startz = 0
         if (n > 0) then
-            starty = -buff_size
+            starty = -buff_size - buff_size_lb
         end if
         if (p > 0) then
-            startz = -buff_size
+            startz = -buff_size - buff_size_lb
         end if
 
         !$acc update device(startx, starty, startz)
@@ -1081,7 +1083,7 @@ contains
         chemxb = species_idx%beg
         chemxe = species_idx%end
 
-        !$acc update device(momxb, momxe, advxb, advxe, contxb, contxe, bubxb, bubxe, intxb, intxe, sys_size, buff_size, E_idx, T_idx, alf_idx, n_idx, adv_n, adap_dt, pi_fac, strxb, strxe, chemxb, chemxe)
+        !$acc update device(momxb, momxe, advxb, advxe, contxb, contxe, bubxb, bubxe, intxb, intxe, sys_size, buff_size, buff_size_lb, E_idx, T_idx, alf_idx, n_idx, adv_n, adap_dt, pi_fac, strxb, strxe, chemxb, chemxe)
         !$acc update device(species_idx)
         !$acc update device(cfl_target, m, n, p)
 
@@ -1100,19 +1102,19 @@ contains
         !$acc enter data copyin(relax, relax_model, palpha_eps,ptgalpha_eps)
 
         ! Allocating grid variables for the x-, y- and z-directions
-        @:ALLOCATE(x_cb(-1 - buff_size:m + buff_size))
-        @:ALLOCATE(x_cc(-buff_size:m + buff_size))
-        @:ALLOCATE(dx(-buff_size:m + buff_size))
+        @:ALLOCATE(x_cb(-1 - buff_size - buff_size_lb:m + buff_size + buff_size_lb))
+        @:ALLOCATE(x_cc(-buff_size - buff_size_lb :m + buff_size + buff_size_lb))
+        @:ALLOCATE(dx(-buff_size - buff_size_lb:m + buff_size + buff_size_lb))
 
         if (n == 0) return; 
-        @:ALLOCATE(y_cb(-1 - buff_size:n + buff_size))
-        @:ALLOCATE(y_cc(-buff_size:n + buff_size))
-        @:ALLOCATE(dy(-buff_size:n + buff_size))
+        @:ALLOCATE(y_cb(-1 - buff_size - buff_size_lb:n + buff_size + buff_size_lb))
+        @:ALLOCATE(y_cc(-buff_size -buff_size_lb:n + buff_size + buff_size_lb))
+        @:ALLOCATE(dy(-buff_size - buff_size_lb:n + buff_size + buff_size_lb))
 
         if (p == 0) return; 
-        @:ALLOCATE(z_cb(-1 - buff_size:p + buff_size))
-        @:ALLOCATE(z_cc(-buff_size:p + buff_size))
-        @:ALLOCATE(dz(-buff_size:p + buff_size))
+        @:ALLOCATE(z_cb(-1 - buff_size -buff_size_lb:p + buff_size + buff_size_lb))
+        @:ALLOCATE(z_cc(-buff_size - buff_size_lb:p + buff_size + buff_size_lb))
+        @:ALLOCATE(dz(-buff_size - buff_size_lb :p + buff_size + buff_size_lb))
 
     end subroutine s_initialize_global_parameters_module
 

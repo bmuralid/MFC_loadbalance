@@ -1292,6 +1292,7 @@ contains
         integer, intent(inout) :: nt
 
         real(kind(0d0)) :: grind_time
+        integer :: i
 
         call s_mpi_barrier()
 
@@ -1338,6 +1339,16 @@ contains
             write (1, '(I10, F15.8)') num_procs, io_time_final
             close (1)
 
+            ! write out the proc_io time data for all the processors
+            inquire (FILE='proc_time_data.dat', EXIST=file_exists)
+            if (file_exists) then
+                open (1, file='proc_time_data.dat', position='append', status='old')
+            else
+                open (1, file='proc_time_data.dat', status='new')
+                write (1, '(A10, A15)') "Ranks", "s/step"
+            end if
+            write (1, '(15F15.8)') (proc_time(i), i = 1, num_procs)
+            close (1)
         end if
 
     end subroutine s_save_performance_metrics
