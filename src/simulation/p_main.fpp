@@ -90,6 +90,10 @@ program p_main
                                                 io_time_final, proc_time, io_proc_time, file_exists, start, finish, nt)
                 ! exit
             end if
+
+            if (t_step == t_step_stop) then
+                exit
+            endif
         end if
 
         call s_perform_time_step(t_step, time_avg, time_final, io_time_avg, io_time_final, &
