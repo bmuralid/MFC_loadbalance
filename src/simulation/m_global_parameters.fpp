@@ -197,6 +197,12 @@ module m_global_parameters
     integer, allocatable, dimension(:) :: start_idx !<
     !! Starting cell-center index of local processor in global grid
 
+    real(kind(0d0)), allocatable, dimension(:) :: load_factor !<
+    !! Load factor for each processor
+
+    integer, allocatable, dimension(:) :: proc_counts_x, proc_counts_y, proc_counts_z !<
+    !! Number of cells in each direction for each processor
+
     type(mpi_io_var), public :: MPI_IO_DATA
     type(mpi_io_ib_var), public :: MPI_IO_IB_DATA
     type(mpi_io_airfoil_ib_var), public :: MPI_IO_airfoil_IB_DATA
@@ -1134,6 +1140,12 @@ contains
 
         allocate (proc_coords(1:num_dims))
 
+        allocate (load_factor(1:num_procs)) 
+
+        allocate (proc_counts_x(1:num_procs))
+        allocate (proc_counts_y(1:num_procs))
+        allocate (proc_counts_z(1:num_procs))
+
         if (parallel_io .neqv. .true.) return
 
 #ifdef MFC_MPI
@@ -1169,6 +1181,10 @@ contains
         end if
 
         deallocate (proc_coords)
+        deallocate (load_factor)
+        deallocate (proc_counts_x)
+        deallocate (proc_counts_y)
+        deallocate (proc_counts_z)
         if (parallel_io) then
             deallocate (start_idx)
             do i = 1, sys_size

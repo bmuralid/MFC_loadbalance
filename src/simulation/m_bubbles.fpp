@@ -66,11 +66,13 @@ contains
         @:ALLOCATE(divu%sf(idwbuff(1)%beg:idwbuff(1)%end, idwbuff(2)%beg:idwbuff(2)%end, idwbuff(3)%beg:idwbuff(3)%end))
         @:ACC_SETUP_SFs(divu)
 
-        @:ALLOCATE(bub_adv_src(0:m, 0:n, 0:p))
-        @:ALLOCATE(bub_r_src(0:m, 0:n, 0:p, 1:nb))
-        @:ALLOCATE(bub_v_src(0:m, 0:n, 0:p, 1:nb))
-        @:ALLOCATE(bub_p_src(0:m, 0:n, 0:p, 1:nb))
-        @:ALLOCATE(bub_m_src(0:m, 0:n, 0:p, 1:nb))
+        @:ALLOCATE(bub_adv_src(-buff_size_lb +0:m + buff_size_lb, &
+            -buff_size_lb + 0:n + buff_size_lb, &
+            -buff_size_lb + 0:p + buff_size_lb))
+        @:ALLOCATE(bub_r_src(-buff_size_lb + 0:m + buff_size_lb, -buff_size_lb + 0:n + buff_size_lb, -buff_size_lb + 0:p + buff_size_lb, 1:nb))
+        @:ALLOCATE(bub_v_src(-buff_size_lb + 0:m + buff_size_lb, -buff_size_lb + 0:n + buff_size_lb, -buff_size_lb + 0:p + buff_size_lb, 1:nb))
+        @:ALLOCATE(bub_p_src(-buff_size_lb + 0:m + buff_size_lb, -buff_size_lb + 0:n + buff_size_lb, -buff_size_lb + 0:p + buff_size_lb, 1:nb))
+        @:ALLOCATE(bub_m_src(-buff_size_lb + 0:m + buff_size_lb, -buff_size_lb + 0:n + buff_size_lb, -buff_size_lb + 0:p + buff_size_lb, 1:nb))
 
     end subroutine s_initialize_bubbles_module
 

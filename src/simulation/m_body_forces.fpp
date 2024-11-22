@@ -37,18 +37,18 @@ contains
         if (n > 0) then
             ! Simulation is 3D
             if (p > 0) then
-                @:ALLOCATE (rhoM(-buff_size:buff_size + m, &
-                    -buff_size:buff_size + n, &
-                    -buff_size:buff_size + p))
+                @:ALLOCATE (rhoM(-buff_size -buff_size_lb :buff_size + m + buff_size_lb, &
+                    -buff_size - buff_size_lb:buff_size + n + buff_size_lb, &
+                    -buff_size - buff_size_lb:buff_size + p + buff_size_lb))
                 ! Simulation is 2D
             else
-                @:ALLOCATE (rhoM(-buff_size:buff_size + m, &
-                    -buff_size:buff_size + n, &
+                @:ALLOCATE (rhoM(-buff_size - buff_size_lb:buff_size + m + buff_size_lb, &
+                    -buff_size - buff_size_lb:buff_size + n + buff_size_lb, &
                     0:0))
             end if
             ! Simulation is 1D
         else
-            @:ALLOCATE (rhoM(-buff_size:buff_size + m, &
+            @:ALLOCATE (rhoM(-buff_size - buff_size_lb:buff_size + m + buff_size_lb, &
                 0:0, &
                 0:0))
         end if

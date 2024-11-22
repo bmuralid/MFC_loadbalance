@@ -66,20 +66,28 @@ contains
 
         ! Allocating centered finite-difference coefficients
         if (probe_wrt) then
-            allocate (fd_coeff_x(-fd_number:fd_number, 0:m))
+            allocate (fd_coeff_x(-fd_number:fd_number, -buff_size_lb + 0:m + buff_size_lb))
             if (n > 0) then
-                allocate (fd_coeff_y(-fd_number:fd_number, 0:n))
+                allocate (fd_coeff_y(-fd_number:fd_number, -buff_size_lb + 0:n + buff_size_lb))
             end if
             if (p > 0) then
-                allocate (fd_coeff_z(-fd_number:fd_number, 0:p))
+                allocate (fd_coeff_z(-fd_number:fd_number, -buff_size_lb + 0:p + buff_size_lb))
             end if
 
-            allocate (accel_mag(0:m, 0:n, 0:p))
-            allocate (x_accel(0:m, 0:n, 0:p))
+            allocate (accel_mag(-buff_size_lb + 0:m + buff_size_lb, &
+                -buff_size_lb + 0:n + buff_size_lb, &
+                -buff_size_lb + 0:p + buff_size_lb))
+            allocate (x_accel(-buff_size_lb + 0:m + buff_size_lb, &
+                -buff_size_lb + 0:n + buff_size_lb, &
+                -buff_size_lb + 0:p + buff_size_lb))
             if (n > 0) then
-                allocate (y_accel(0:m, 0:n, 0:p))
+                allocate (y_accel(-buff_size_lb + 0:m + buff_size_lb, &
+                    -buff_size_lb + 0:n + buff_size_lb, &
+                    -buff_size_lb + 0:p + buff_size_lb))
                 if (p > 0) then
-                    allocate (z_accel(0:m, 0:n, 0:p))
+                    allocate (z_accel(-buff_size_lb + 0:m + buff_size_lb, &
+                        -buff_size_lb + 0:n + buff_size_lb, &
+                        -buff_size_lb + 0:p + buff_size_lb))
                 end if
             end if
         end if

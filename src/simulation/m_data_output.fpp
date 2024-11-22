@@ -1568,12 +1568,17 @@ contains
     subroutine s_initialize_data_output_module
 
         ! Allocating/initializing ICFL, VCFL, CCFL and Rc stability criteria
-        @:ALLOCATE(icfl_sf(0:m, 0:n, 0:p))
+        @:ALLOCATE(icfl_sf(-buff_size_lb + 0:m + buff_size_lb, &
+            -buff_size_lb + 0:n + buff_size_lb, &
+            -buff_size_lb + 0:p + buff_size_lb))
         icfl_max = 0d0
 
         if (viscous) then
-            @:ALLOCATE(vcfl_sf(0:m, 0:n, 0:p))
-            @:ALLOCATE(Rc_sf  (0:m, 0:n, 0:p))
+            @:ALLOCATE(vcfl_sf(-buff_size_lb + 0:m + buff_size_lb, &
+                -buff_size_lb + 0:n + buff_size_lb, -buff_size_lb + 0:p + buff_size_lb))
+            @:ALLOCATE(Rc_sf  (-buff_size_lb + 0:m + buff_size_lb, &
+                -buff_size_lb + 0:n + buff_size_lb, &
+                -buff_size_lb + 0:p + buff_size_lb))
 
             vcfl_max = 0d0
             Rc_min = 1d3

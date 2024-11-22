@@ -97,17 +97,17 @@ contains
         if (qbmm .and. .not. polytropic) then
             if (n > 0) then
                 if (p > 0) then
-                    @:ALLOCATE(q_cons_buff_send(0:-1 + buff_size*(sys_size + 2*nb*4)* &
-                                             & (m + 2*buff_size + 1)* &
-                                             & (n + 2*buff_size + 1)* &
-                                             & (p + 2*buff_size + 1)/ &
-                                             & (min(m, n, p) + 2*buff_size + 1)))
+                    @:ALLOCATE(q_cons_buff_send(0:-1 + (buff_size + buff_size_lb)*(sys_size + 2*nb*4)* &
+                                             & (m + 2*(buff_size + buff_size_lb) + 1)* &
+                                             & (n + 2*(buff_size + buff_size_lb) + 1)* &
+                                             & (p + 2*(buff_size + buff_size_lb) + 1)/ &
+                                             & (min(m, n, p) + 2*(buff_size + buff_size_lb) + 1)))
                 else
-                    @:ALLOCATE(q_cons_buff_send(0:-1 + buff_size*(sys_size + 2*nb*4)* &
-                                             & (max(m, n) + 2*buff_size + 1)))
+                    @:ALLOCATE(q_cons_buff_send(0:-1 + (buff_size + buff_size_lb)*(sys_size + 2*nb*4)* &
+                                             & (max(m, n) + 2*(buff_size + buff_size_lb) + 1)))
                 end if
             else
-                @:ALLOCATE(q_cons_buff_send(0:-1 + buff_size*(sys_size + 2*nb*4)))
+                @:ALLOCATE(q_cons_buff_send(0:-1 + (buff_size + buff_size_lb)*(sys_size + 2*nb*4)))
             end if
 
             @:ALLOCATE(q_cons_buff_recv(0:ubound(q_cons_buff_send, 1)))
@@ -116,17 +116,17 @@ contains
         else
             if (n > 0) then
                 if (p > 0) then
-                    @:ALLOCATE(q_cons_buff_send(0:-1 + buff_size*sys_size* &
-                                             & (m + 2*buff_size + 1)* &
-                                             & (n + 2*buff_size + 1)* &
-                                             & (p + 2*buff_size + 1)/ &
-                                             & (min(m, n, p) + 2*buff_size + 1)))
+                    @:ALLOCATE(q_cons_buff_send(0:-1 + (buff_size + buff_size_lb)*sys_size* &
+                                             & (m + 2*(buff_size + buff_size_lb) + 1)* &
+                                             & (n + 2*(buff_size + buff_size_lb) + 1)* &
+                                             & (p + 2*(buff_size + buff_size_lb) + 1)/ &
+                                             & (min(m, n, p) + 2*(buff_size + buff_size_lb) + 1)))
                 else
-                    @:ALLOCATE(q_cons_buff_send(0:-1 + buff_size*sys_size* &
-                                             & (max(m, n) + 2*buff_size + 1)))
+                    @:ALLOCATE(q_cons_buff_send(0:-1 + (buff_size + buff_size_lb) *sys_size* &
+                                             & (max(m, n) + 2*(buff_size + buff_size_lb) + 1)))
                 end if
             else
-                @:ALLOCATE(q_cons_buff_send(0:-1 + buff_size*sys_size))
+                @:ALLOCATE(q_cons_buff_send(0:-1 + (buff_size + buff_size_lb)*sys_size))
             end if
 
             @:ALLOCATE(q_cons_buff_recv(0:ubound(q_cons_buff_send, 1)))
@@ -138,17 +138,17 @@ contains
             nVars = num_dims + 1
             if (n > 0) then
                 if (p > 0) then
-                    @:ALLOCATE(c_divs_buff_send(0:-1 + buff_size*(num_dims+1)* &
-                                             & (m + 2*buff_size + 1)* &
-                                             & (n + 2*buff_size + 1)* &
-                                             & (p + 2*buff_size + 1)/ &
-                                             & (min(m, n, p) + 2*buff_size + 1)))
+                    @:ALLOCATE(c_divs_buff_send(0:-1 + (buff_size + buff_size_lb)*(num_dims+1)* &
+                                             & (m + 2*(buff_size + buff_size_lb) + 1)* &
+                                             & (n + 2*(buff_size + buff_size_lb) + 1)* &
+                                             & (p + 2*(buff_size + buff_size_lb) + 1)/ &
+                                             & (min(m, n, p) + 2*(buff_size + buff_size_lb) + 1)))
                 else
-                    @:ALLOCATE(c_divs_buff_send(0:-1 + buff_size*(num_dims+1)* &
-                                             & (max(m, n) + 2*buff_size + 1)))
+                    @:ALLOCATE(c_divs_buff_send(0:-1 + (buff_size + buff_size_lb) *(num_dims+1)* &
+                                             & (max(m, n) + 2*(buff_size + buff_size_lb) + 1)))
                 end if
             else
-                @:ALLOCATE(c_divs_buff_send(0:-1 + buff_size*(num_dims+1)))
+                @:ALLOCATE(c_divs_buff_send(0:-1 + (buff_size + buff_size_lb)*(num_dims+1)))
             end if
 
             @:ALLOCATE(c_divs_buff_recv(0:ubound(c_divs_buff_send, 1)))
@@ -321,6 +321,8 @@ contains
             !! after the majority is divided up among the available processors
 
         integer :: i, j !< Generic loop iterators
+
+        integer :: tmp_proc_crd(2) !< Cartesian coordinates of the local process
 
         if (num_procs == 1 .and. parallel_io) then
             do i = 1, num_dims
@@ -608,6 +610,17 @@ contains
                 end if
             end if
 
+            ! Store the number of cells per processor in y - direction
+            do i = 1, num_procs
+                call MPI_CART_COORDS(MPI_COMM_CART, i, 2, tmp_proc_crd, ierr)
+                proc_counts_y(i) = (n + 1)*tmp_proc_crd(2)
+                do j = 1, rem_cells
+                    if (tmp_proc_crd(2) == j - 1) then
+                        proc_counts_y(i) = proc_counts_y(i) + 1; exit
+                    end if
+                end do
+            end do
+
             ! ==================================================================
 
             ! 1D Cartesian Processor Topology ==================================
@@ -665,7 +678,15 @@ contains
             end if
         end if
         ! ==================================================================
-
+        do i = 1, num_procs
+            call MPI_CART_COORDS(MPI_COMM_CART, i, 2, tmp_proc_crd, ierr)
+            proc_counts_x(i) = (m + 1)*tmp_proc_crd(1)
+            do j = 1, rem_cells
+                if (tmp_proc_crd(1) == j - 1) then
+                    proc_counts_x(i) = proc_counts_x(i) + 1; exit
+                end if
+            end do
+        end do
 #endif
 
     end subroutine s_mpi_decompose_computational_domain
