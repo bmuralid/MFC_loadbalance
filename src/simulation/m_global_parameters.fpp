@@ -34,6 +34,11 @@ module m_global_parameters
 
     ! Logistics ================================================================
     integer :: num_procs             !< Number of processors
+
+    #:for dir in {'x', 'y', 'z'}
+        integer :: num_procs_${dir}$ !< Number of processors in the ${dir}$-direction
+    #:endfor    
+        
     character(LEN=path_len) :: case_dir              !< Case folder location
     logical :: run_time_info         !< Run-time output flag
     integer :: t_step_old            !< Existing IC/grid folder
@@ -193,6 +198,7 @@ module m_global_parameters
 
     integer, allocatable, dimension(:) :: proc_coords !<
     !! Processor coordinates in MPI_CART_COMM
+    integer, allocatable, dimension(:) :: proc_coords_x, proc_coords_y, proc_coords_z !<
 
     integer, allocatable, dimension(:) :: start_idx !<
     !! Starting cell-center index of local processor in global grid
@@ -1140,11 +1146,15 @@ contains
 
         allocate (proc_coords(1:num_dims))
 
+        #:for dir in {'x', 'y', 'z'}
+            allocate ( proc_coords_${dir}$(1:num_procs) )
+        #:endfor
+
         allocate (load_factor(1:num_procs)) 
 
-        allocate (proc_counts_x(1:num_procs))
-        allocate (proc_counts_y(1:num_procs))
-        allocate (proc_counts_z(1:num_procs))
+        #:for dir in {'x', 'y', 'z'}
+            allocate (proc_counts_${dir}$(1:num_procs))
+        #:endfor
 
         if (parallel_io .neqv. .true.) return
 
@@ -1182,9 +1192,11 @@ contains
 
         deallocate (proc_coords)
         deallocate (load_factor)
-        deallocate (proc_counts_x)
-        deallocate (proc_counts_y)
-        deallocate (proc_counts_z)
+        #:for dir in {'x', 'y', 'z'}
+            deallocate (proc_coords_${dir}$)
+            deallocate (proc_counts_${dir}$)
+        #:endfor
+
         if (parallel_io) then
             deallocate (start_idx)
             do i = 1, sys_size

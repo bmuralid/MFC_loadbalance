@@ -505,7 +505,10 @@ contains
                         start_idx(3) = (p + 1)*proc_coords(3) + rem_cells
                     end if
                 end if
-                ! ==================================================================
+                call MPI_ALLGATHER(p, 1, MPI_INTEGER, proc_counts_z, 1, MPI_INTEGER, MPI_COMM_WORLD, ierr)
+
+                call MPI_ALLGATHER(proc_coords(3), 1, MPI_INTEGER, proc_coords_z, 1, MPI_INTEGER, MPI_COMM_WORLD, ierr)
+               ! ==================================================================
 
                 ! 2D Cartesian Processor Topology ==================================
             else
@@ -609,17 +612,10 @@ contains
                     start_idx(2) = (n + 1)*proc_coords(2) + rem_cells
                 end if
             end if
+            call MPI_ALLGATHER(n, 1, MPI_INTEGER, proc_counts_y, 1, MPI_INTEGER, MPI_COMM_WORLD, ierr)
+            ! ==================================================================
 
-            ! Store the number of cells per processor in y - direction
-            do i = 1, num_procs
-                call MPI_CART_COORDS(MPI_COMM_CART, i, 2, tmp_proc_crd, ierr)
-                proc_counts_y(i) = (n + 1)*tmp_proc_crd(2)
-                do j = 1, rem_cells
-                    if (tmp_proc_crd(2) == j - 1) then
-                        proc_counts_y(i) = proc_counts_y(i) + 1; exit
-                    end if
-                end do
-            end do
+            call MPI_ALLGATHER(proc_coords(2), 1, MPI_INTEGER, proc_coords_y, 1, MPI_INTEGER, MPI_COMM_WORLD, ierr)
 
             ! ==================================================================
 
@@ -677,16 +673,10 @@ contains
                 start_idx(1) = (m + 1)*proc_coords(1) + rem_cells
             end if
         end if
-        ! ==================================================================
-        do i = 1, num_procs
-            call MPI_CART_COORDS(MPI_COMM_CART, i, 2, tmp_proc_crd, ierr)
-            proc_counts_x(i) = (m + 1)*tmp_proc_crd(1)
-            do j = 1, rem_cells
-                if (tmp_proc_crd(1) == j - 1) then
-                    proc_counts_x(i) = proc_counts_x(i) + 1; exit
-                end if
-            end do
-        end do
+        call MPI_ALLGATHER(m, 1, MPI_INTEGER, proc_counts_x, 1, MPI_INTEGER, MPI_COMM_WORLD, ierr)
+
+        call MPI_ALLGATHER(proc_coords(1), 1, MPI_INTEGER, proc_coords_x, 1, MPI_INTEGER, MPI_COMM_WORLD, ierr)
+       ! ==================================================================
 #endif
 
     end subroutine s_mpi_decompose_computational_domain
