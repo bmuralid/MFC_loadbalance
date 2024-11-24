@@ -24,10 +24,11 @@ module m_load_balance
 contains
     !>  The goal of this subroutine is to rebalance the number of points in each direction among the processors
         !! based on the load factor such that the computational load is balanced among the processors.
-    subroutine s_mpi_loadbalance_computational_domain(proc_time)
-        real(kind(0d0)), intent(in) :: proc_time(:)
-        integer :: i, j, k
+    subroutine s_mpi_loadbalance_computational_domain(time_avg)
+        real(kind(0d0)), intent(in) :: time_avg
+        integer :: i, j, k, ierr
 
+        real(kind(0d0)) :: proc_time(0:num_procs -1)
         real(kind(0d0)), dimension(num_procs_x) :: load_factor_x
         real(kind(0d0)), dimension(num_procs_y) :: load_factor_y
         integer, dimension(num_procs_x) :: px
@@ -36,10 +37,15 @@ contains
         integer, dimension(num_procs_y) :: new_dist_y, new_displ_y
         integer, dimension(num_procs) :: buffer
 
+
+        call mpi_bcast_time_step_values(proc_time, time_avg)
+
+
         if (proc_rank == 0) then
             load_factor_x = 0.0d0
             load_factor_y = 0.0d0
             do i = 1, num_procs
+                load_factor(i) = proc_time(i-1) / minval(proc_time)
                 do j = 1, num_procs_x
                     if (proc_coords_x(i) == j - 1) then
                         load_factor_x(j) = load_factor_x(j) + load_factor(i)
@@ -59,6 +65,7 @@ contains
             call s_redistribute(px, load_factor_x, 4, new_dist_x, new_displ_x)
             call s_redistribute(py, load_factor_y, 4, new_dist_y, new_displ_y)
         end if
+        call s_mpi_barrier()
 
         !> distribute m and n
         if (proc_rank == 0) then
@@ -75,23 +82,19 @@ contains
         end if
         call s_mpi_scatter(buffer, n)
 
-        !> distribute the start indices
         if (proc_rank == 0) then
             do i = 1, num_procs
-                buffer(i) = new_displ_x(proc_coords_x(i) + 1)
+                buffer(i) = new_displ_x(proc_coords_x(i) + 1) 
             end do
         end if
         call s_mpi_scatter(buffer, start_idx(1))
 
-        !> distribute the start indices
         if (proc_rank == 0) then
             do i = 1, num_procs
-                buffer(i) = new_displ_y(proc_coords_y(i) + 1)
+                buffer(i) = new_displ_y(proc_coords_y(i) + 1) 
             end do
         end if
         call s_mpi_scatter(buffer, start_idx(2))
-
-        call s_mpi_barrier()
     end subroutine s_mpi_loadbalance_computational_domain
 
     subroutine s_redistribute(counts, lf, mx, new_dist, new_displ)

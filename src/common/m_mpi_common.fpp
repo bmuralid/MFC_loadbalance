@@ -318,12 +318,13 @@ contains
     end subroutine s_mpi_allreduce_sum
 
     subroutine s_mpi_scatter(var_glb, var_loc)
-        integer, dimension(:), intent(in) :: var_glb
+        integer, dimension(1:num_procs), intent(in) :: var_glb
         integer, intent(inout) ::var_loc
 
 #ifdef MFC_MPI
 
-        call MPI_SCATTER(var_glb, 1, MPI_INTEGER, var_loc, 1, MPI_INTEGER, 0, MPI_COMM_WORLD, ierr)
+        call MPI_SCATTER(var_glb, 1, MPI_INTEGER, var_loc, 1, &
+        MPI_INTEGER, 0, MPI_COMM_WORLD, ierr)
 
 #endif
     end subroutine s_mpi_scatter

@@ -29,6 +29,8 @@ module m_mpi_proxy
 
     use m_nvtx
 
+    use m_load_balance
+
     use ieee_arithmetic
     ! ==========================================================================
 
@@ -304,9 +306,6 @@ contains
 
 #ifdef MFC_MPI
 
-        integer :: num_procs_x, num_procs_y, num_procs_z !<
-            !! Optimal number of processors in the x-, y- and z-directions
-
         real(kind(0d0)) :: tmp_num_procs_x, tmp_num_procs_y, tmp_num_procs_z !<
             !! Non-optimal number of processors in the x-, y- and z-directions
 
@@ -322,7 +321,8 @@ contains
 
         integer :: i, j !< Generic loop iterators
 
-        integer :: tmp_proc_crd(2) !< Cartesian coordinates of the local process
+        real(kind(0d0)) :: time_avg !< Average time for the simulation
+
 
         if (num_procs == 1 .and. parallel_io) then
             do i = 1, num_dims
@@ -677,6 +677,14 @@ contains
 
         call MPI_ALLGATHER(proc_coords(1), 1, MPI_INTEGER, proc_coords_x, 1, MPI_INTEGER, MPI_COMM_WORLD, ierr)
        ! ==================================================================
+
+       !> Initial call to redistribute the computational domain
+       if (proc_coords_x(proc_rank + 1) == 1 .and. proc_coords_y(proc_rank + 1) == 1 ) then
+           time_avg = 4.0d0
+       else
+           time_avg = 1.0d0
+       endif
+       call s_mpi_loadbalance_computational_domain(time_avg)
 #endif
 
     end subroutine s_mpi_decompose_computational_domain
