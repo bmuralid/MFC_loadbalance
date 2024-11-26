@@ -26,7 +26,7 @@ contains
         !! based on the load factor such that the computational load is balanced among the processors.
     subroutine s_mpi_loadbalance_computational_domain(time_avg)
         real(kind(0d0)), intent(in) :: time_avg
-        integer :: i, j, k, ierr
+        integer :: i, j, k, ierr, tmp_val
 
         real(kind(0d0)) :: proc_time(0:num_procs -1)
         real(kind(0d0)), dimension(num_procs_x) :: load_factor_x
@@ -37,9 +37,11 @@ contains
         integer, dimension(num_procs_y) :: new_dist_y, new_displ_y
         integer, dimension(num_procs) :: buffer
 
-
         call mpi_bcast_time_step_values(proc_time, time_avg)
 
+        if (time_avg < epsilon(0d0)) then
+            return
+        end if
 
         if (proc_rank == 0) then
             load_factor_x = 0.0d0
@@ -62,8 +64,8 @@ contains
             load_factor_x = load_factor_x/num_procs_y
             load_factor_y = load_factor_y/num_procs_x
 
-            call s_redistribute(px, load_factor_x, 4, new_dist_x, new_displ_x)
-            call s_redistribute(py, load_factor_y, 4, new_dist_y, new_displ_y)
+            call s_redistribute(px, load_factor_x, 40, new_dist_x, new_displ_x)
+            call s_redistribute(py, load_factor_y, 40, new_dist_y, new_displ_y)
         end if
         call s_mpi_barrier()
 
@@ -87,14 +89,28 @@ contains
                 buffer(i) = new_displ_x(proc_coords_x(i) + 1) 
             end do
         end if
-        call s_mpi_scatter(buffer, start_idx(1))
+        call s_mpi_scatter(buffer, tmp_val)
+        diff_start_idx(1) = tmp_val - start_idx(1)
+        start_idx(1) = tmp_val
 
         if (proc_rank == 0) then
             do i = 1, num_procs
                 buffer(i) = new_displ_y(proc_coords_y(i) + 1) 
             end do
         end if
-        call s_mpi_scatter(buffer, start_idx(2))
+        call s_mpi_scatter(buffer, tmp_val)
+        diff_start_idx(2) = tmp_val - start_idx(2)
+        start_idx(2) = tmp_val
+
+        if (proc_rank == 0) then
+            open(1, file='repartitioning.dat', status='new', action='write')
+            write(1, '(I5)') num_procs
+            do i = 1, num_procs
+                write(1, '(3I5)') i, proc_coords_x(i), proc_coords_y(i)
+            end do
+            close(1)
+        end if
+
     end subroutine s_mpi_loadbalance_computational_domain
 
     subroutine s_redistribute(counts, lf, mx, new_dist, new_displ)
@@ -136,11 +152,11 @@ contains
         diff = sum_counts - sum_new_dist
 
         if (diff > 0) then
-            do i = 1, diff
+            do i = 1, nsz
                 new_dist(i) = new_dist(i) + 1
             end do
         elseif (diff < 0) then
-            do i = 1, -diff
+            do i = 1, nsz
                 new_dist(i) = new_dist(i) - 1
             end do
         end if
@@ -159,16 +175,20 @@ contains
         diff = sum_counts - sum_new_dist
 
         if (diff > 0) then
-            do i = 1, diff
+            do i = 1, nsz
                 if (new_dist(i) < counts(i) + mx_allowed) then
                     new_dist(i) = new_dist(i) + 1
+                    diff = diff - 1
                 end if
+                if (diff == 0) exit
             end do
         elseif (diff < 0) then
-            do i = 1, -diff
+            do i = 1, nsz
                 if (new_dist(i) > counts(i) - mx_allowed) then
                     new_dist(i) = new_dist(i) - 1
+                    diff = diff + 1
                 end if
+                if (diff == 0) exit
             end do
         end if
 

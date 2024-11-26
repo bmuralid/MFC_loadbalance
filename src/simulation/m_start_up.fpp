@@ -78,6 +78,8 @@ module m_start_up
     use m_surface_tension
 
     use m_body_forces
+
+    use m_load_balance
     ! ==========================================================================
 
     implicit none
@@ -92,7 +94,7 @@ module m_start_up
  s_initialize_modules, s_initialize_gpu_vars, &
  s_initialize_mpi_domain, s_finalize_modules, &
  s_perform_time_step, s_save_data, &
- s_save_performance_metrics
+ s_save_performance_metrics, s_perform_load_balance
 
 
     type(scalar_field), allocatable, dimension(:) :: grad_x_vf, grad_y_vf, grad_z_vf, norm_vf
@@ -1279,6 +1281,15 @@ contains
         t_step = t_step + 1
 
     end subroutine s_perform_time_step
+
+    subroutine s_perform_load_balance(time_avg)
+        real(kind(0d0)), intent(in) :: time_avg
+
+        return
+        call s_mpi_loadbalance_computational_domain(time_avg)
+
+        !> Need to re-initialize all the grid related variables after load balancing
+    end subroutine s_perform_load_balance
 
     subroutine s_save_performance_metrics(t_step, time_avg, time_final, io_time_avg, io_time_final, proc_time, io_proc_time, file_exists, start, finish, nt)
 

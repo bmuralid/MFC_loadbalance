@@ -89,6 +89,7 @@ program p_main
                 call s_save_performance_metrics(t_step, time_avg, time_final, io_time_avg, &
                                                 io_time_final, proc_time, io_proc_time, file_exists, start, finish, nt)
                 ! exit
+                ! call s_perform_load_balance(time_avg)
             end if
 
             if (t_step == t_step_stop) then

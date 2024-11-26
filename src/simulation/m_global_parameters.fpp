@@ -202,6 +202,7 @@ module m_global_parameters
 
     integer, allocatable, dimension(:) :: start_idx !<
     !! Starting cell-center index of local processor in global grid
+    integer, allocatable, dimension(:) :: diff_start_idx !<
 
     real(kind(0d0)), allocatable, dimension(:) :: load_factor !<
     !! Load factor for each processor
@@ -1000,13 +1001,18 @@ contains
             allocate (MPI_IO_DATA%var(1:sys_size))
         end if
 
+        buff_size_lb = 10  ! NTBC
         do i = 1, sys_size
-            allocate (MPI_IO_DATA%var(i)%sf(0:m, 0:n, 0:p))
+            allocate (MPI_IO_DATA%var(i)%sf(-buff_size_lb + 0:m + buff_size_lb, &
+                -buff_size_lb + 0:n + buff_size_lb, &
+                -buff_size_lb + 0:p + buff_size_lb))
             MPI_IO_DATA%var(i)%sf => null()
         end do
         if (qbmm .and. .not. polytropic) then
             do i = sys_size + 1, sys_size + 2*nb*4
-                allocate (MPI_IO_DATA%var(i)%sf(0:m, 0:n, 0:p))
+                allocate (MPI_IO_DATA%var(i)%sf(-buff_size_lb + 0:m + buff_size_lb, &
+                    -buff_size_lb + 0:n + buff_size_lb, &
+                    -buff_size_lb + 0:p + buff_size_lb))
                 MPI_IO_DATA%var(i)%sf => null()
             end do
         end if
@@ -1040,7 +1046,6 @@ contains
             buff_size = weno_polyn + 2
         end if
 
-        buff_size_lb = 10  ! NTBC
         if (probe_wrt) then
             fd_number = max(1, fd_order/2)
         end if
@@ -1174,6 +1179,8 @@ contains
 
         allocate (start_idx(1:num_dims))
 
+        allocate (diff_start_idx(1:num_dims))
+
 #endif
 
     end subroutine s_initialize_parallel_io
@@ -1199,6 +1206,7 @@ contains
 
         if (parallel_io) then
             deallocate (start_idx)
+            deallocate (diff_start_idx)
             do i = 1, sys_size
                 MPI_IO_DATA%var(i)%sf => null()
             end do
