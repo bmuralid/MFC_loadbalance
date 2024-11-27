@@ -565,21 +565,21 @@ contains
         ! END: Allocation/Association of flux_n, flux_src_n, and flux_gsrc_n ===
 
         if (alt_soundspeed) then
-            @:ALLOCATE(blkmod1(-buff_size_lb + 0:m + buff_size_lb, & 
-                -buff_size_lb + 0:n + buff_size_lb, &
-                -buff_size_lb + 0:p + buff_size_lb), &
-                blkmod2(-buff_size_lb + 0:m + buff_size_lb, &
-                -buff_size_lb + 0:n + buff_size_lb, &
-                -buff_size_lb + 0:p + buff_size_lb), &
-                alpha1(-buff_size_lb + 0:m + buff_size_lb, &
-                -buff_size_lb + 0:n + buff_size_lb, &
-                -buff_size_lb + 0:p + buff_size_lb), &
-                alpha2(-buff_size_lb + 0:m + buff_size_lb, &
-                -buff_size_lb + 0:n + buff_size_lb, &
-                -buff_size_lb + 0:p + buff_size_lb),&
-                Kterm(-buff_size_lb+ 0:m + buff_size_lb, &
-                -buff_size_lb + 0:n + buff_size_lb, &
-                -buff_size_lb + 0:p + buff_size_lb))
+            @:ALLOCATE(blkmod1(-buff_size_lb(1) + 0:m + buff_size_lb(2), & 
+                -buff_size_lb(3) + 0:n + buff_size_lb(4), &
+                -buff_size_lb(5) + 0:p + buff_size_lb(6)), &
+                blkmod2(-buff_size_lb(1) + 0:m + buff_size_lb(2), &
+                -buff_size_lb(3) + 0:n + buff_size_lb(4), &
+                -buff_size_lb(5) + 0:p + buff_size_lb(6)), &
+                alpha1(-buff_size_lb(1) + 0:m + buff_size_lb(2), &
+                -buff_size_lb(3) + 0:n + buff_size_lb(4), &
+                -buff_size_lb(5) + 0:p + buff_size_lb(6)), &
+                alpha2(-buff_size_lb(1) + 0:m + buff_size_lb(2), &
+                -buff_size_lb(3) + 0:n + buff_size_lb(4), &
+                -buff_size_lb(5) + 0:p + buff_size_lb(6)),&
+                Kterm(-buff_size_lb(1)+ 0:m + buff_size_lb(2), &
+                -buff_size_lb(3) + 0:n + buff_size_lb(4), &
+                -buff_size_lb(5) + 0:p + buff_size_lb(6)))
         end if
 
         @:ALLOCATE(gamma_min(1:num_fluids), pres_inf(1:num_fluids))
@@ -617,9 +617,9 @@ contains
         end do
 
         if (bubbles) then
-            @:ALLOCATE(nbub(-buff_size_lb + 0:m + buff_size_lb, &
-                -buff_size_lb + 0:n + buff_size_lb, &
-                -buff_size_lb + 0:p + buff_size_lb))
+            @:ALLOCATE(nbub(-buff_size_lb(1) + 0:m + buff_size_lb(2), &
+                -buff_size_lb(3) + 0:n + buff_size_lb(4), &
+                -buff_size_lb(5) + 0:p + buff_size_lb(6)))
         end if
 
     end subroutine s_initialize_rhs_module

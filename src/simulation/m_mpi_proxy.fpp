@@ -99,17 +99,17 @@ contains
         if (qbmm .and. .not. polytropic) then
             if (n > 0) then
                 if (p > 0) then
-                    @:ALLOCATE(q_cons_buff_send(0:-1 + (buff_size + buff_size_lb)*(sys_size + 2*nb*4)* &
-                                             & (m + 2*(buff_size + buff_size_lb) + 1)* &
-                                             & (n + 2*(buff_size + buff_size_lb) + 1)* &
-                                             & (p + 2*(buff_size + buff_size_lb) + 1)/ &
-                                             & (min(m, n, p) + 2*(buff_size + buff_size_lb) + 1)))
+                    @:ALLOCATE(q_cons_buff_send(0:-1 + (buff_size + buff_size_lb(1))*(sys_size + 2*nb*4)* &
+                                             & (m + 2*(buff_size + buff_size_lb(1)) + 1)* &
+                                             & (n + 2*(buff_size + buff_size_lb(3)) + 1)* &
+                                             & (p + 2*(buff_size + buff_size_lb(5)) + 1)/ &
+                                             & (min(m, n, p) + 2*(buff_size + buff_size_lb(1)) + 1)))
                 else
-                    @:ALLOCATE(q_cons_buff_send(0:-1 + (buff_size + buff_size_lb)*(sys_size + 2*nb*4)* &
-                                             & (max(m, n) + 2*(buff_size + buff_size_lb) + 1)))
+                    @:ALLOCATE(q_cons_buff_send(0:-1 + (buff_size + buff_size_lb(1))*(sys_size + 2*nb*4)* &
+                                             & (max(m, n) + 2*(buff_size + buff_size_lb(1)) + 1)))
                 end if
             else
-                @:ALLOCATE(q_cons_buff_send(0:-1 + (buff_size + buff_size_lb)*(sys_size + 2*nb*4)))
+                @:ALLOCATE(q_cons_buff_send(0:-1 + (buff_size + buff_size_lb(1))*(sys_size + 2*nb*4)))
             end if
 
             @:ALLOCATE(q_cons_buff_recv(0:ubound(q_cons_buff_send, 1)))
@@ -118,17 +118,17 @@ contains
         else
             if (n > 0) then
                 if (p > 0) then
-                    @:ALLOCATE(q_cons_buff_send(0:-1 + (buff_size + buff_size_lb)*sys_size* &
-                                             & (m + 2*(buff_size + buff_size_lb) + 1)* &
-                                             & (n + 2*(buff_size + buff_size_lb) + 1)* &
-                                             & (p + 2*(buff_size + buff_size_lb) + 1)/ &
-                                             & (min(m, n, p) + 2*(buff_size + buff_size_lb) + 1)))
+                    @:ALLOCATE(q_cons_buff_send(0:-1 + (buff_size + buff_size_lb(1))*sys_size* &
+                                             & (m + 2*(buff_size + buff_size_lb(1)) + 1)* &
+                                             & (n + 2*(buff_size + buff_size_lb(3)) + 1)* &
+                                             & (p + 2*(buff_size + buff_size_lb(5)) + 1)/ &
+                                             & (min(m, n, p) + 2*(buff_size + buff_size_lb(1)) + 1)))
                 else
-                    @:ALLOCATE(q_cons_buff_send(0:-1 + (buff_size + buff_size_lb) *sys_size* &
-                                             & (max(m, n) + 2*(buff_size + buff_size_lb) + 1)))
+                    @:ALLOCATE(q_cons_buff_send(0:-1 + (buff_size + buff_size_lb(1)) *sys_size* &
+                                             & (max(m, n) + 2*(buff_size + buff_size_lb(1)) + 1)))
                 end if
             else
-                @:ALLOCATE(q_cons_buff_send(0:-1 + (buff_size + buff_size_lb)*sys_size))
+                @:ALLOCATE(q_cons_buff_send(0:-1 + (buff_size + buff_size_lb(1))*sys_size))
             end if
 
             @:ALLOCATE(q_cons_buff_recv(0:ubound(q_cons_buff_send, 1)))
@@ -140,17 +140,17 @@ contains
             nVars = num_dims + 1
             if (n > 0) then
                 if (p > 0) then
-                    @:ALLOCATE(c_divs_buff_send(0:-1 + (buff_size + buff_size_lb)*(num_dims+1)* &
-                                             & (m + 2*(buff_size + buff_size_lb) + 1)* &
-                                             & (n + 2*(buff_size + buff_size_lb) + 1)* &
-                                             & (p + 2*(buff_size + buff_size_lb) + 1)/ &
-                                             & (min(m, n, p) + 2*(buff_size + buff_size_lb) + 1)))
+                    @:ALLOCATE(c_divs_buff_send(0:-1 + (buff_size + buff_size_lb(1))*(num_dims+1)* &
+                                             & (m + 2*(buff_size + buff_size_lb(1)) + 1)* &
+                                             & (n + 2*(buff_size + buff_size_lb(3)) + 1)* &
+                                             & (p + 2*(buff_size + buff_size_lb(5)) + 1)/ &
+                                             & (min(m, n, p) + 2*(buff_size + buff_size_lb(1)) + 1)))
                 else
-                    @:ALLOCATE(c_divs_buff_send(0:-1 + (buff_size + buff_size_lb) *(num_dims+1)* &
-                                             & (max(m, n) + 2*(buff_size + buff_size_lb) + 1)))
+                    @:ALLOCATE(c_divs_buff_send(0:-1 + (buff_size + buff_size_lb(1)) *(num_dims+1)* &
+                                             & (max(m, n) + 2*(buff_size + buff_size_lb(1)) + 1)))
                 end if
             else
-                @:ALLOCATE(c_divs_buff_send(0:-1 + (buff_size + buff_size_lb)*(num_dims+1)))
+                @:ALLOCATE(c_divs_buff_send(0:-1 + (buff_size + buff_size_lb(1))*(num_dims+1)))
             end if
 
             @:ALLOCATE(c_divs_buff_recv(0:ubound(c_divs_buff_send, 1)))

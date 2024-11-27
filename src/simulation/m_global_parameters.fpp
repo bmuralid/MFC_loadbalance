@@ -203,6 +203,7 @@ module m_global_parameters
     integer, allocatable, dimension(:) :: start_idx !<
     !! Starting cell-center index of local processor in global grid
     integer, allocatable, dimension(:) :: diff_start_idx !<
+    integer, allocatable, dimension(:) :: diff_count_idx !<
 
     real(kind(0d0)), allocatable, dimension(:) :: load_factor !<
     !! Load factor for each processor
@@ -294,7 +295,7 @@ module m_global_parameters
     !! The number of cells that are necessary to be able to store enough boundary
     !! conditions data to march the solution in the physical computational domain
     !! to the next time-step.
-    integer :: buff_size_lb
+    integer, dimension(6) :: buff_size_lb
 
     integer :: startx, starty, startz
 
@@ -1002,17 +1003,18 @@ contains
         end if
 
         buff_size_lb = 10  ! NTBC
+        !$acc update_device(buff_size_lb)
         do i = 1, sys_size
-            allocate (MPI_IO_DATA%var(i)%sf(-buff_size_lb + 0:m + buff_size_lb, &
-                -buff_size_lb + 0:n + buff_size_lb, &
-                -buff_size_lb + 0:p + buff_size_lb))
+            allocate (MPI_IO_DATA%var(i)%sf(-buff_size_lb(1) + 0:m + buff_size_lb(2), &
+                -buff_size_lb(3) + 0:n + buff_size_lb(4), &
+                -buff_size_lb(5) + 0:p + buff_size_lb(6)))
             MPI_IO_DATA%var(i)%sf => null()
         end do
         if (qbmm .and. .not. polytropic) then
             do i = sys_size + 1, sys_size + 2*nb*4
-                allocate (MPI_IO_DATA%var(i)%sf(-buff_size_lb + 0:m + buff_size_lb, &
-                    -buff_size_lb + 0:n + buff_size_lb, &
-                    -buff_size_lb + 0:p + buff_size_lb))
+                allocate (MPI_IO_DATA%var(i)%sf(-buff_size_lb(1) + 0:m + buff_size_lb(2), &
+                    -buff_size_lb(3) + 0:n + buff_size_lb(4), &
+                    -buff_size_lb(5) + 0:p + buff_size_lb(6)))
                 MPI_IO_DATA%var(i)%sf => null()
             end do
         end if
@@ -1054,9 +1056,9 @@ contains
         idwint(1)%beg = 0; idwint(2)%beg = 0; idwint(3)%beg = 0
         idwint(1)%end = m; idwint(2)%end = n; idwint(3)%end = p
 
-        idwbuff(1)%beg = -buff_size - buff_size_lb
-        if (num_dims > 1) then; idwbuff(2)%beg = -buff_size - buff_size_lb; else; idwbuff(2)%beg = 0; end if
-        if (num_dims > 2) then; idwbuff(3)%beg = -buff_size - buff_size_lb; else; idwbuff(3)%beg = 0; end if
+        idwbuff(1)%beg = -buff_size - buff_size_lb(1)
+        if (num_dims > 1) then; idwbuff(2)%beg = -buff_size - buff_size_lb(3); else; idwbuff(2)%beg = 0; end if
+        if (num_dims > 2) then; idwbuff(3)%beg = -buff_size - buff_size_lb(5); else; idwbuff(3)%beg = 0; end if
 
         idwbuff(1)%end = idwint(1)%end - idwbuff(1)%beg
         idwbuff(2)%end = idwint(2)%end - idwbuff(2)%beg
@@ -1072,14 +1074,14 @@ contains
                 & idwbuff(3)%beg:idwbuff(3)%end))
         end if
 
-        startx = -buff_size - buff_size_lb
+        startx = -buff_size - buff_size_lb(1)
         starty = 0
         startz = 0
         if (n > 0) then
-            starty = -buff_size - buff_size_lb
+            starty = -buff_size - buff_size_lb(3)
         end if
         if (p > 0) then
-            startz = -buff_size - buff_size_lb
+            startz = -buff_size - buff_size_lb(5)
         end if
 
         !$acc update device(startx, starty, startz)
@@ -1126,19 +1128,19 @@ contains
         !$acc enter data copyin(relax, relax_model, palpha_eps,ptgalpha_eps)
 
         ! Allocating grid variables for the x-, y- and z-directions
-        @:ALLOCATE(x_cb(-1 - buff_size - buff_size_lb:m + buff_size + buff_size_lb))
-        @:ALLOCATE(x_cc(-buff_size - buff_size_lb :m + buff_size + buff_size_lb))
-        @:ALLOCATE(dx(-buff_size - buff_size_lb:m + buff_size + buff_size_lb))
+        @:ALLOCATE(x_cb(-1 - buff_size - buff_size_lb(1):m + buff_size + buff_size_lb(2)))
+        @:ALLOCATE(x_cc(-buff_size - buff_size_lb(1) :m + buff_size + buff_size_lb(2)))
+        @:ALLOCATE(dx(-buff_size - buff_size_lb(1):m + buff_size + buff_size_lb(2)))
 
         if (n == 0) return; 
-        @:ALLOCATE(y_cb(-1 - buff_size - buff_size_lb:n + buff_size + buff_size_lb))
-        @:ALLOCATE(y_cc(-buff_size -buff_size_lb:n + buff_size + buff_size_lb))
-        @:ALLOCATE(dy(-buff_size - buff_size_lb:n + buff_size + buff_size_lb))
+        @:ALLOCATE(y_cb(-1 - buff_size - buff_size_lb(3):n + buff_size + buff_size_lb(4)))
+        @:ALLOCATE(y_cc(-buff_size -buff_size_lb(3):n + buff_size + buff_size_lb(4)))
+        @:ALLOCATE(dy(-buff_size - buff_size_lb(3):n + buff_size +  buff_size_lb(4)))
 
         if (p == 0) return; 
-        @:ALLOCATE(z_cb(-1 - buff_size -buff_size_lb:p + buff_size + buff_size_lb))
-        @:ALLOCATE(z_cc(-buff_size - buff_size_lb:p + buff_size + buff_size_lb))
-        @:ALLOCATE(dz(-buff_size - buff_size_lb :p + buff_size + buff_size_lb))
+        @:ALLOCATE(z_cb(-1 - buff_size -buff_size_lb(5):p + buff_size + buff_size_lb(6)))
+        @:ALLOCATE(z_cc(-buff_size - buff_size_lb(5):p + buff_size + buff_size_lb(6)))
+        @:ALLOCATE(dz(-buff_size - buff_size_lb(5) :p + buff_size +  buff_size_lb(6)))
 
     end subroutine s_initialize_global_parameters_module
 
@@ -1180,6 +1182,7 @@ contains
         allocate (start_idx(1:num_dims))
 
         allocate (diff_start_idx(1:num_dims))
+        allocate (diff_count_idx(1:num_dims))
 
 #endif
 
@@ -1207,6 +1210,7 @@ contains
         if (parallel_io) then
             deallocate (start_idx)
             deallocate (diff_start_idx)
+            deallocate (diff_count_idx)
             do i = 1, sys_size
                 MPI_IO_DATA%var(i)%sf => null()
             end do

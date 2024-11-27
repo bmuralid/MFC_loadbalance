@@ -126,11 +126,11 @@ contains
         if (weno_order == 1) return
 
         ! Allocating/Computing WENO Coefficients in x-direction ============
-        is1_weno%beg = -buff_size -buff_size_lb; is1_weno%end = m - is1_weno%beg
+        is1_weno%beg = -buff_size -buff_size_lb(1); is1_weno%end = m - is1_weno%beg
         if (n == 0) then
             is2_weno%beg = 0
         else
-            is2_weno%beg = -buff_size -buff_size_lb; 
+            is2_weno%beg = -buff_size -buff_size_lb(3); 
         end if
 
         is2_weno%end = n - is2_weno%beg
@@ -138,7 +138,7 @@ contains
         if (p == 0) then
             is3_weno%beg = 0
         else
-            is3_weno%beg = -buff_size -buff_size_lb
+            is3_weno%beg = -buff_size -buff_size_lb(5)
         end if
 
         is3_weno%end = p - is3_weno%beg
@@ -164,13 +164,13 @@ contains
         ! Allocating/Computing WENO Coefficients in y-direction ============
         if (n == 0) return
 
-        is2_weno%beg = -buff_size - buff_size_lb; is2_weno%end = n - is2_weno%beg
-        is1_weno%beg = -buff_size -buff_size_lb; is1_weno%end = m - is1_weno%beg
+        is1_weno%beg = -buff_size - buff_size_lb(1); is1_weno%end = m - is1_weno%beg
+        is2_weno%beg = -buff_size - buff_size_lb(3); is2_weno%end = n - is2_weno%beg
 
         if (p == 0) then
             is3_weno%beg = 0
         else
-            is3_weno%beg = -buff_size -buff_size_lb
+            is3_weno%beg = -buff_size -buff_size_lb(5)
         end if
 
         is3_weno%end = p - is3_weno%beg
@@ -196,9 +196,9 @@ contains
         ! Allocating/Computing WENO Coefficients in z-direction ============
         if (p == 0) return
 
-        is2_weno%beg = -buff_size - buff_size_lb; is2_weno%end = n - is2_weno%beg
-        is1_weno%beg = -buff_size - buff_size_lb; is1_weno%end = m - is1_weno%beg
-        is3_weno%beg = -buff_size - buff_size_lb; is3_weno%end = p - is3_weno%beg
+        is1_weno%beg = -buff_size - buff_size_lb(1); is1_weno%end = m - is1_weno%beg
+        is2_weno%beg = -buff_size - buff_size_lb(3); is2_weno%end = n - is2_weno%beg
+        is3_weno%beg = -buff_size - buff_size_lb(5); is3_weno%end = p - is3_weno%beg
 
         @:ALLOCATE(poly_coef_cbL_z(is3_weno%beg + weno_polyn:is3_weno%end - weno_polyn, 0:weno_polyn, &
             0:weno_polyn - 1))

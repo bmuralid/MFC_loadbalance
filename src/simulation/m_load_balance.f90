@@ -75,14 +75,18 @@ contains
                 buffer(i) = new_dist_x(proc_coords_x(i) + 1) - 1
             end do
         end if
-        call s_mpi_scatter(buffer, m)
+        call s_mpi_scatter(buffer, tmp_val)
+        diff_count_idx(1) = tmp_val - m
+        m = tmp_val
 
         if (proc_rank == 0) then
             do i = 1, num_procs
                 buffer(i) = new_dist_y(proc_coords_y(i) + 1) - 1
             end do
         end if
-        call s_mpi_scatter(buffer, n)
+        call s_mpi_scatter(buffer, tmp_val)
+        diff_count_idx(2) = tmp_val - n
+        n = tmp_val
 
         if (proc_rank == 0) then
             do i = 1, num_procs
@@ -102,14 +106,14 @@ contains
         diff_start_idx(2) = tmp_val - start_idx(2)
         start_idx(2) = tmp_val
 
-        if (proc_rank == 0) then
-            open(1, file='repartitioning.dat', status='new', action='write')
-            write(1, '(I5)') num_procs
-            do i = 1, num_procs
-                write(1, '(3I5)') i, proc_coords_x(i), proc_coords_y(i)
-            end do
-            close(1)
-        end if
+        ! if (proc_rank == 0) then
+        !     open(1, file='repartitioning.dat', status='new', action='write')
+        !     write(1, '(I5)') num_procs
+        !     do i = 1, num_procs
+        !         write(1, '(3I5)') i, proc_coords_x(i), proc_coords_y(i)
+        !     end do
+        !     close(1)
+        ! end if
 
     end subroutine s_mpi_loadbalance_computational_domain
 

@@ -66,28 +66,28 @@ contains
 
         ! Allocating centered finite-difference coefficients
         if (probe_wrt) then
-            allocate (fd_coeff_x(-fd_number:fd_number, -buff_size_lb + 0:m + buff_size_lb))
+            allocate (fd_coeff_x(-fd_number:fd_number, -buff_size_lb(1) + 0:m + buff_size_lb(2)))
             if (n > 0) then
-                allocate (fd_coeff_y(-fd_number:fd_number, -buff_size_lb + 0:n + buff_size_lb))
+                allocate (fd_coeff_y(-fd_number:fd_number, -buff_size_lb(3) + 0:n + buff_size_lb(4)))
             end if
             if (p > 0) then
-                allocate (fd_coeff_z(-fd_number:fd_number, -buff_size_lb + 0:p + buff_size_lb))
+                allocate (fd_coeff_z(-fd_number:fd_number, -buff_size_lb(5) + 0:p + buff_size_lb(6)))
             end if
 
-            allocate (accel_mag(-buff_size_lb + 0:m + buff_size_lb, &
-                -buff_size_lb + 0:n + buff_size_lb, &
-                -buff_size_lb + 0:p + buff_size_lb))
-            allocate (x_accel(-buff_size_lb + 0:m + buff_size_lb, &
-                -buff_size_lb + 0:n + buff_size_lb, &
-                -buff_size_lb + 0:p + buff_size_lb))
+            allocate (accel_mag(-buff_size_lb(1) + 0:m + buff_size_lb(2), &
+                -buff_size_lb(3) + 0:n + buff_size_lb(4), &
+                -buff_size_lb(5) + 0:p + buff_size_lb(6)))
+            allocate (x_accel(-buff_size_lb(1) + 0:m + buff_size_lb(2), &
+                -buff_size_lb(3) + 0:n + buff_size_lb(4), &
+                -buff_size_lb(5) + 0:p + buff_size_lb(6)))
             if (n > 0) then
-                allocate (y_accel(-buff_size_lb + 0:m + buff_size_lb, &
-                    -buff_size_lb + 0:n + buff_size_lb, &
-                    -buff_size_lb + 0:p + buff_size_lb))
+                allocate (y_accel(-buff_size_lb(1) + 0:m + buff_size_lb(2), &
+                    -buff_size_lb(3) + 0:n + buff_size_lb(4), &
+                    -buff_size_lb(5) + 0:p + buff_size_lb(6)))
                 if (p > 0) then
-                    allocate (z_accel(-buff_size_lb + 0:m + buff_size_lb, &
-                        -buff_size_lb + 0:n + buff_size_lb, &
-                        -buff_size_lb + 0:p + buff_size_lb))
+                    allocate (z_accel(-buff_size_lb(1) + 0:m + buff_size_lb(2), &
+                        -buff_size_lb(3) + 0:n + buff_size_lb(4), &
+                        -buff_size_lb(5) + 0:p + buff_size_lb(6)))
                 end if
             end if
         end if
