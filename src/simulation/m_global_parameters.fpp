@@ -1002,7 +1002,7 @@ contains
             allocate (MPI_IO_DATA%var(1:sys_size))
         end if
 
-        buff_size_lb = 10  ! NTBC
+        buff_size_lb = 50  ! NTBC
         !$acc update_device(buff_size_lb)
         do i = 1, sys_size
             allocate (MPI_IO_DATA%var(i)%sf(-buff_size_lb(1) + 0:m + buff_size_lb(2), &
@@ -1143,6 +1143,71 @@ contains
         @:ALLOCATE(dz(-buff_size - buff_size_lb(5) :p + buff_size +  buff_size_lb(6)))
 
     end subroutine s_initialize_global_parameters_module
+
+    subroutine s_reinitialize_global_parameters_module
+
+        integer :: i, j, k
+        integer :: fac
+
+         ! update the global variable buff_size_lb
+        buff_size_lb(1) = buff_size_lb(1) + diff_start_idx(1)
+        buff_size_lb(2) = buff_size_lb(2)  - diff_count_idx(1) - diff_start_idx(1)
+        buff_size_lb(3) = buff_size_lb(3) + diff_start_idx(2)
+        buff_size_lb(4) = buff_size_lb(4)  - diff_count_idx(2) - diff_start_idx(2)
+       
+
+        ! Configuring Coordinate Direction Indexes =========================
+        idwint(1)%beg = 0; idwint(2)%beg = 0; idwint(3)%beg = 0
+        idwint(1)%end = m; idwint(2)%end = n; idwint(3)%end = p
+
+        idwbuff(1)%beg = -buff_size - buff_size_lb(1)
+        if (num_dims > 1) then; idwbuff(2)%beg = -buff_size - buff_size_lb(3); else; idwbuff(2)%beg = 0; end if
+        if (num_dims > 2) then; idwbuff(3)%beg = -buff_size - buff_size_lb(5); else; idwbuff(3)%beg = 0; end if
+
+        idwbuff(1)%end = idwint(1)%end + buff_size + buff_size_lb(2)
+        if (num_dims > 1) then
+            idwbuff(2)%end = idwint(2)%end + buff_size + buff_size_lb(4)
+        else
+            idwbuff(2)%end = idwint(2)%end
+        end if
+        if (num_dims > 2) then
+            idwbuff(3)%end = idwint(3)%end + buff_size + buff_size_lb(6)
+        else
+            idwbuff(3)%end = idwint(3)%end
+        end if
+        !$acc update device(idwint, idwbuff)
+        ! ==================================================================
+
+        startx = -buff_size - buff_size_lb(1)
+        starty = 0
+        startz = 0
+        if (n > 0) then
+            starty = -buff_size - buff_size_lb(3)
+        end if
+        if (p > 0) then
+            startz = -buff_size - buff_size_lb(5)
+        end if
+
+        !$acc update device(startx, starty, startz)
+
+        @:DEALLOCATE(x_cb, x_cc, dx)
+        ! Allocating grid variables for the x-, y- and z-directions
+        @:ALLOCATE(x_cb(-1 - buff_size - buff_size_lb(1):m + buff_size + buff_size_lb(2)))
+        @:ALLOCATE(x_cc(-buff_size - buff_size_lb(1) :m + buff_size + buff_size_lb(2)))
+        @:ALLOCATE(dx(-buff_size - buff_size_lb(1):m + buff_size + buff_size_lb(2)))
+
+        if (n == 0) return; 
+        @:DEALLOCATE(y_cb, y_cc, dy)
+        @:ALLOCATE(y_cb(-1 - buff_size - buff_size_lb(3):n + buff_size + buff_size_lb(4)))
+        @:ALLOCATE(y_cc(-buff_size -buff_size_lb(3):n + buff_size + buff_size_lb(4)))
+        @:ALLOCATE(dy(-buff_size - buff_size_lb(3):n + buff_size +  buff_size_lb(4)))
+
+        if (p == 0) return; 
+        @:DEALLOCATE(z_cb, z_cc, dz)
+        @:ALLOCATE(z_cb(-1 - buff_size -buff_size_lb(5):p + buff_size + buff_size_lb(6)))
+        @:ALLOCATE(z_cc(-buff_size - buff_size_lb(5):p + buff_size + buff_size_lb(6)))
+        @:ALLOCATE(dz(-buff_size - buff_size_lb(5) :p + buff_size +  buff_size_lb(6)))
+    end subroutine s_reinitialize_global_parameters_module
 
     !> Initializes parallel infrastructure
     subroutine s_initialize_parallel_io

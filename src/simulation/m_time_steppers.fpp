@@ -254,7 +254,9 @@ contains
         @:ALLOCATE(rhs_vf(1:sys_size))
 
         do i = 1, sys_size
-            @:ALLOCATE(rhs_vf(i)%sf(0:m, 0:n, 0:p))
+            @:ALLOCATE(rhs_vf(i)%sf(-buff_size_lb(1)+ 0:m + buff_size_lb(2), &
+                -buff_size_lb(3) + 0:n + buff_size_lb(4), &
+                -buff_size_lb(5) + 0:p + buff_size_lb(6)))
             @:ACC_SETUP_SFs(rhs_vf(i))
         end do
 
@@ -264,10 +266,159 @@ contains
         end if
 
         if (cfl_dt) then
-            @:ALLOCATE(max_dt(0:m, 0:n, 0:p))
+            @:ALLOCATE(max_dt(0:m + buff_size_lb(2), &
+                0:n + buff_size_lb(4), &
+                0:p + buff_size_lb(6)))
         end if
 
     end subroutine s_initialize_time_steppers_module
+
+    subroutine s_reinitialize_time_steppers_module
+
+        integer :: i, j !< Generic loop iterators
+
+        do i = 1, num_ts
+            do j = 1, sys_size
+
+                q_cons_ts(i)%vf(j)%sf(idwbuff(1)%beg:, &
+                    idwbuff(2)%beg:, &
+                    idwbuff(3)%beg:) => q_cons_ts(i)%vf(j)%sf
+                
+            end do
+            ! @:ACC_SETUP_VFs(q_cons_ts(i))
+        end do
+
+        ! Allocating the cell-average primitive ts variables
+        if (probe_wrt) then
+            do i = 0, 3
+                do j = 1, sys_size
+                    q_prim_ts(i)%vf(j)%sf(idwbuff(1)%beg:, &
+                        idwbuff(2)%beg:, &
+                        idwbuff(3)%beg:) => q_prim_ts(i)%vf(j)%sf
+                end do
+            end do
+        end if
+
+        do i = 1, adv_idx%end
+            q_prim_vf(i)%sf(idwbuff(1)%beg:, &
+                idwbuff(2)%beg:, &
+                idwbuff(3)%beg:) => q_prim_vf(i)%sf
+            ! @:ACC_SETUP_SFs(q_prim_vf(i))
+        end do
+
+        if (bubbles) then
+            do i = bub_idx%beg, bub_idx%end
+                q_prim_vf(i)%sf(idwbuff(1)%beg:, &
+                    idwbuff(2)%beg:, &
+                    idwbuff(3)%beg:) => q_prim_vf(i)%sf
+                ! @:ACC_SETUP_SFs(q_prim_vf(i))
+            end do
+            if (adv_n) then
+                q_prim_vf(n_idx)%sf(idwbuff(1)%beg:, &
+                    idwbuff(2)%beg:, &
+                    idwbuff(3)%beg:) => q_prim_vf(n_idx)%sf
+                ! @:ACC_SETUP_SFs(q_prim_vf(n_idx))
+            end if
+        end if
+
+        if (hypoelasticity) then
+
+            do i = stress_idx%beg, stress_idx%end
+                q_prim_vf(i)%sf(idwbuff(1)%beg:, &
+                    idwbuff(2)%beg:, &
+                    idwbuff(3)%beg:) => q_prim_vf(i)%sf
+                ! @:ACC_SETUP_SFs(q_prim_vf(i))
+            end do
+        end if
+
+        if (model_eqns == 3) then
+            do i = internalEnergies_idx%beg, internalEnergies_idx%end
+                q_prim_vf(i)%sf(idwbuff(1)%beg:, &
+                    idwbuff(2)%beg:, &
+                    idwbuff(3)%beg:) => q_prim_vf(i)%sf
+                ! @:ACC_SETUP_SFs(q_prim_vf(i))
+            end do
+        end if
+
+        if (surface_tension) then
+            q_prim_vf(c_idx)%sf(idwbuff(1)%beg:, &
+                idwbuff(2)%beg:, &
+                idwbuff(3)%beg:) => q_prim_vf(c_idx)%sf
+            ! @:ACC_SETUP_SFs(q_prim_vf(c_idx))
+        end if
+
+        if (chemistry) then
+            do i = chemxb, chemxe
+                q_prim_vf(i)%sf(idwbuff(1)%beg:, &
+                    idwbuff(2)%beg:, &
+                    idwbuff(3)%beg:) => q_prim_vf(i)%sf
+                ! @:ACC_SETUP_SFs(q_prim_vf(i))
+            end do
+
+            q_prim_vf(T_idx)%sf(idwbuff(1)%beg:, &
+                idwbuff(2)%beg:, &
+                idwbuff(3)%beg:) => q_prim_vf(T_idx)%sf
+            ! @:ACC_SETUP_SFs(q_prim_vf(T_idx))
+        end if
+
+        !Initialize bubble variables pb and mv at all quadrature nodes for all R0 bins
+        if (qbmm .and. (.not. polytropic)) then
+            pb_ts(1)%sf(idwbuff(1)%beg:, &
+                idwbuff(2)%beg:, &
+                idwbuff(3)%beg:, 1:, 1:) => pb_ts(1)%sf
+            ! @:ACC_SETUP_SFs(pb_ts(1))
+
+            pb_ts(2)%sf(idwbuff(1)%beg:, &
+                idwbuff(2)%beg:, &
+                idwbuff(3)%beg:, 1:, 1:) => pb_ts(2)%sf
+            ! @:ACC_SETUP_SFs(pb_ts(2))
+
+        else if (qbmm .and. polytropic) then
+            pb_ts(1)%sf(idwbuff(1)%beg:, &
+                idwbuff(2)%beg:, &
+                idwbuff(3)%beg:, 1:, 1:) => pb_ts(1)%sf
+            ! @:ACC_SETUP_SFs(pb_ts(1))
+
+            pb_ts(2)%sf(idwbuff(1)%beg:, &
+                idwbuff(2)%beg:, &
+                idwbuff(3)%beg:, 1:, 1:) => pb_ts(2)%sf
+            ! @:ACC_SETUP_SFs(pb_ts(2))
+
+        end if
+
+        if (qbmm .and. (.not. polytropic)) then
+            mv_ts(1)%sf(idwbuff(1)%beg:, &
+                idwbuff(2)%beg:, &
+                idwbuff(3)%beg:, 1:, 1:) => mv_ts(1)%sf
+            ! @:ACC_SETUP_SFs(mv_ts(1))
+
+            mv_ts(2)%sf(idwbuff(1)%beg:, &
+                idwbuff(2)%beg:, &
+                idwbuff(3)%beg:, 1:, 1:) => mv_ts(2)%sf
+            ! @:ACC_SETUP_SFs(mv_ts(2))
+
+        else if (qbmm .and. polytropic) then
+            mv_ts(1)%sf(idwbuff(1)%beg:, &
+                idwbuff(2)%beg:, &
+                idwbuff(3)%beg:, 1:, 1:) => mv_ts(1)%sf
+            ! @:ACC_SETUP_SFs(mv_ts(1))
+
+            mv_ts(2)%sf(idwbuff(1)%beg:, &
+                idwbuff(2)%beg:, &
+                idwbuff(3)%beg:, 1:, 1:) => mv_ts(2)%sf
+            ! @:ACC_SETUP_SFs(mv_ts(2))
+
+        end if
+
+        ! Allocating the cell-average RHS variables
+
+        do i = 1, sys_size
+            rhs_vf(i)%sf(-buff_size_lb(1):, &
+                -buff_size_lb(3):, &
+                -buff_size_lb(5):) => rhs_vf(i)%sf
+            ! @:ACC_SETUP_SFs(rhs_vf(i))
+        end do
+    end subroutine s_reinitialize_time_steppers_module
 
     !> 1st order TVD RK time-stepping algorithm
         !! @param t_step Current time step
@@ -597,7 +748,7 @@ contains
                 end do
             end do
         end do
-
+        
         !Evolve pb and mv for non-polytropic qbmm
         if (qbmm .and. (.not. polytropic)) then
             !$acc parallel loop collapse(5) gang vector default(present)

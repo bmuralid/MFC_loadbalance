@@ -24,10 +24,12 @@ module m_load_balance
 contains
     !>  The goal of this subroutine is to rebalance the number of points in each direction among the processors
         !! based on the load factor such that the computational load is balanced among the processors.
-    subroutine s_mpi_loadbalance_computational_domain(time_avg)
+    subroutine s_mpi_loadbalance_computational_domain(time_avg, opt)
         real(kind(0d0)), intent(in) :: time_avg
-        integer :: i, j, k, ierr, tmp_val
+        integer, intent(in), optional :: opt
 
+        integer :: i, j, k, ierr
+        integer :: tmp_val, mx
         real(kind(0d0)) :: proc_time(0:num_procs -1)
         real(kind(0d0)), dimension(num_procs_x) :: load_factor_x
         real(kind(0d0)), dimension(num_procs_y) :: load_factor_y
@@ -36,14 +38,31 @@ contains
         integer, dimension(num_procs_x) :: new_dist_x, new_displ_x
         integer, dimension(num_procs_y) :: new_dist_y, new_displ_y
         integer, dimension(num_procs) :: buffer
+        real(kind(0d0)) :: proc_time_std
+        logical :: file_exists
 
         call mpi_bcast_time_step_values(proc_time, time_avg)
 
-        if (time_avg < epsilon(0d0)) then
-            return
+        diff_start_idx = 0
+        diff_count_idx = 0
+        mx = 2
+        if (present(opt)) mx = opt
+        ! get the std deviation of the proc_time array
+        proc_time_std = 0.0d0
+        if (proc_rank == 0) then
+            proc_time_std = sqrt(sum((proc_time - sum(proc_time)/num_procs)**2)/num_procs)
+            proc_time_std = proc_time_std/sum(proc_time)/num_procs
         end if
 
+        call MPI_BCAST(proc_time_std, 1, MPI_DOUBLE_PRECISION, 0, MPI_COMM_WORLD, ierr)
+        ! if the std deviation is less than 10% of the average time, then return
+        ! if (proc_time_std <= 0.05d0) then
+        !     return
+        ! end if
+
         if (proc_rank == 0) then
+            print *, 'Repartitioning the computational domain'
+
             load_factor_x = 0.0d0
             load_factor_y = 0.0d0
             do i = 1, num_procs
@@ -64,8 +83,8 @@ contains
             load_factor_x = load_factor_x/num_procs_y
             load_factor_y = load_factor_y/num_procs_x
 
-            call s_redistribute(px, load_factor_x, 40, new_dist_x, new_displ_x)
-            call s_redistribute(py, load_factor_y, 40, new_dist_y, new_displ_y)
+            call s_redistribute(px, load_factor_x, mx, new_dist_x, new_displ_x)
+            call s_redistribute(py, load_factor_y, mx, new_dist_y, new_displ_y)
         end if
         call s_mpi_barrier()
 
@@ -106,14 +125,27 @@ contains
         diff_start_idx(2) = tmp_val - start_idx(2)
         start_idx(2) = tmp_val
 
-        ! if (proc_rank == 0) then
-        !     open(1, file='repartitioning.dat', status='new', action='write')
-        !     write(1, '(I5)') num_procs
-        !     do i = 1, num_procs
-        !         write(1, '(3I5)') i, proc_coords_x(i), proc_coords_y(i)
-        !     end do
-        !     close(1)
-        ! end if
+        call MPI_ALLGATHER(m, 1, MPI_INTEGER, proc_counts_x, 1, MPI_INTEGER, MPI_COMM_WORLD, ierr)
+
+        if (n > 0) then
+            call MPI_ALLGATHER(n, 1, MPI_INTEGER, proc_counts_y, 1, MPI_INTEGER, MPI_COMM_WORLD, ierr)
+        endif
+
+        if (proc_rank == 0) then
+            inquire (FILE='repartitioning.dat', EXIST=file_exists)
+            if (file_exists) then
+                open(1, file='repartitioning.dat', status='old', position='append')
+            else
+                open(1, file='repartitioning.dat', status='new')
+                write(1, '(I5)') num_procs
+            endif
+            write(1, '(I5, 9I10)') proc_counts_x 
+            if (n > 0) then
+                write(1, '(I5, 9I10)') proc_counts_y
+            end if
+            write(1, *) '----------------------------------------'
+            close(1)
+        end if
 
     end subroutine s_mpi_loadbalance_computational_domain
 

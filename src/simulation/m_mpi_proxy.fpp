@@ -161,6 +161,89 @@ contains
 
     end subroutine s_initialize_mpi_proxy_module
 
+    subroutine s_reinitialize_mpi_proxy_module
+
+#ifdef MFC_MPI
+
+        ! Allocating q_cons_buff_send/recv and ib_buff_send/recv. Please note that
+        ! for the sake of simplicity, both variables are provided sufficient
+        ! storage to hold the largest buffer in the computational domain.
+
+        if (qbmm .and. .not. polytropic) then
+            if (n > 0) then
+                if (p > 0) then
+                    @:DEALLOCATE(q_cons_buff_send)
+                    @:ALLOCATE(q_cons_buff_send(0:-1 + (buff_size + buff_size_lb(1))*(sys_size + 2*nb*4)* &
+                                             & (m + 2*(buff_size + buff_size_lb(1)) + 1)* &
+                                             & (n + 2*(buff_size + buff_size_lb(3)) + 1)* &
+                                             & (p + 2*(buff_size + buff_size_lb(5)) + 1)/ &
+                                             & (min(m, n, p) + 2*(buff_size + buff_size_lb(1)) + 1)))
+                else
+                    @:DEALLOCATE(q_cons_buff_send)
+                    @:ALLOCATE(q_cons_buff_send(0:-1 + (buff_size + buff_size_lb(1))*(sys_size + 2*nb*4)* &
+                                             & (max(m, n) + 2*(buff_size + buff_size_lb(1)) + 1)))
+                end if
+            else
+                @:DEALLOCATE(q_cons_buff_send)
+                @:ALLOCATE(q_cons_buff_send(0:-1 + (buff_size + buff_size_lb(1))*(sys_size + 2*nb*4)))
+            end if
+
+            @:DEALLOCATE(q_cons_buff_recv)
+            @:ALLOCATE(q_cons_buff_recv(0:ubound(q_cons_buff_send, 1)))
+
+            v_size = sys_size + 2*nb*4
+        else
+            if (n > 0) then
+                if (p > 0) then
+                    @:DEALLOCATE(q_cons_buff_send)
+                    @:ALLOCATE(q_cons_buff_send(0:-1 + (buff_size + buff_size_lb(1))*sys_size* &
+                                             & (m + 2*(buff_size + buff_size_lb(1)) + 1)* &
+                                             & (n + 2*(buff_size + buff_size_lb(3)) + 1)* &
+                                             & (p + 2*(buff_size + buff_size_lb(5)) + 1)/ &
+                                             & (min(m, n, p) + 2*(buff_size + buff_size_lb(1)) + 1)))
+                else
+                    @:DEALLOCATE(q_cons_buff_send)
+                    @:ALLOCATE(q_cons_buff_send(0:-1 + (buff_size + buff_size_lb(1)) *sys_size* &
+                                             & (max(m, n) + 2*(buff_size + buff_size_lb(1)) + 1)))
+                end if
+            else
+                @:DEALLOCATE(q_cons_buff_send)
+                @:ALLOCATE(q_cons_buff_send(0:-1 + (buff_size + buff_size_lb(1))*sys_size))
+            end if
+            @:DEALLOCATE(q_cons_buff_recv)
+            @:ALLOCATE(q_cons_buff_recv(0:ubound(q_cons_buff_send, 1)))
+
+            v_size = sys_size
+        end if
+
+        if (surface_tension) then
+            nVars = num_dims + 1
+            if (n > 0) then
+                if (p > 0) then
+                    @:DEALLOCATE(c_divs_buff_send)
+                    @:ALLOCATE(c_divs_buff_send(0:-1 + (buff_size + buff_size_lb(1))*(num_dims+1)* &
+                                             & (m + 2*(buff_size + buff_size_lb(1)) + 1)* &
+                                             & (n + 2*(buff_size + buff_size_lb(3)) + 1)* &
+                                             & (p + 2*(buff_size + buff_size_lb(5)) + 1)/ &
+                                             & (min(m, n, p) + 2*(buff_size + buff_size_lb(1)) + 1)))
+                else
+                    @:DEALLOCATE(c_divs_buff_send)
+                    @:ALLOCATE(c_divs_buff_send(0:-1 + (buff_size + buff_size_lb(1)) *(num_dims+1)* &
+                                             & (max(m, n) + 2*(buff_size + buff_size_lb(1)) + 1)))
+                end if
+            else
+                @:DEALLOCATE(c_divs_buff_send)
+                @:ALLOCATE(c_divs_buff_send(0:-1 + (buff_size + buff_size_lb(1))*(num_dims+1)))
+            end if
+
+            @:DEALLOCATE(c_divs_buff_recv)
+            @:ALLOCATE(c_divs_buff_recv(0:ubound(c_divs_buff_send, 1)))
+        end if
+        !$acc update device(v_size, nVars)
+
+#endif
+
+    end subroutine s_reinitialize_mpi_proxy_module
     !>  Since only the processor with rank 0 reads and verifies
         !!      the consistency of user inputs, these are initially not
         !!      available to the other processors. Then, the purpose of
@@ -684,7 +767,7 @@ contains
        else
            time_avg = 1.0d0
        endif
-       call s_mpi_loadbalance_computational_domain(time_avg)
+       call s_mpi_loadbalance_computational_domain(time_avg=time_avg,opt=40)
 #endif
 
     end subroutine s_mpi_decompose_computational_domain

@@ -85,11 +85,8 @@ program p_main
             end if
         else
             if (mod(t_step - t_step_start, t_step_save) == 0 .or. t_step == t_step_stop) then
-            ! if (t_step == t_step_stop) then
                 call s_save_performance_metrics(t_step, time_avg, time_final, io_time_avg, &
                                                 io_time_final, proc_time, io_proc_time, file_exists, start, finish, nt)
-                ! exit
-                ! call s_perform_load_balance(time_avg)
             end if
 
             if (t_step == t_step_stop) then
@@ -100,6 +97,7 @@ program p_main
         call s_perform_time_step(t_step, time_avg, time_final, io_time_avg, io_time_final, &
                                  proc_time, io_proc_time, file_exists, start, finish, nt)
 
+        
         if (cfl_dt) then
             if (abs(mod(mytime, t_save)) < dt .or. mytime >= t_stop) then
                 call s_save_data(t_step, start, finish, io_time_avg, nt)

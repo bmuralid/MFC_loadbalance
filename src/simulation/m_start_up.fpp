@@ -934,6 +934,98 @@ contains
 
     end subroutine s_read_parallel_data_files
 
+    subroutine s_reinitialize_grid()
+#ifdef MFC_MPI
+
+        real(kind(0d0)), allocatable, dimension(:) :: x_cb_glb, y_cb_glb, z_cb_glb
+
+        integer :: ifile, ierr, data_size
+        integer, dimension(MPI_STATUS_SIZE) :: status
+        integer(KIND=MPI_OFFSET_KIND) :: disp
+        character(LEN=path_len + 2*name_len) :: file_loc
+        logical :: file_exist
+
+
+        integer :: i, j
+
+        allocate (x_cb_glb(-1:m_glb))
+        allocate (y_cb_glb(-1:n_glb))
+        allocate (z_cb_glb(-1:p_glb))
+
+        !> Cebug
+        print*, 'Reinitializing grid', proc_rank
+        print *, "m , n, p", m, n, p
+
+        ! Read in cell boundary locations in x-direction
+        file_loc = trim(case_dir)//'/restart_data'//trim(mpiiofs)//'x_cb.dat'
+        inquire (FILE=trim(file_loc), EXIST=file_exist)
+
+        if (file_exist) then
+            data_size = m_glb + 2
+            call MPI_FILE_OPEN(MPI_COMM_WORLD, file_loc, MPI_MODE_RDONLY, mpi_info_int, ifile, ierr)
+            call MPI_FILE_READ(ifile, x_cb_glb, data_size, MPI_DOUBLE_PRECISION, status, ierr)
+            call MPI_FILE_CLOSE(ifile, ierr)
+        else
+            call s_mpi_abort('File '//trim(file_loc)//' is missing. Exiting...')
+        end if
+
+        ! Assigning local cell boundary locations
+        x_cb(-1:m) = x_cb_glb((start_idx(1) - 1):(start_idx(1) + m))
+        ! Computing the cell width distribution
+        dx(0:m) = x_cb(0:m) - x_cb(-1:m - 1)
+        ! Computing the cell center locations
+        x_cc(0:m) = x_cb(-1:m - 1) + dx(0:m)/2d0
+
+        if (n > 0) then
+            ! Read in cell boundary locations in y-direction
+            file_loc = trim(case_dir)//'/restart_data'//trim(mpiiofs)//'y_cb.dat'
+            inquire (FILE=trim(file_loc), EXIST=file_exist)
+
+            if (file_exist) then
+                data_size = n_glb + 2
+                call MPI_FILE_OPEN(MPI_COMM_WORLD, file_loc, MPI_MODE_RDONLY, mpi_info_int, ifile, ierr)
+                call MPI_FILE_READ(ifile, y_cb_glb, data_size, MPI_DOUBLE_PRECISION, status, ierr)
+                call MPI_FILE_CLOSE(ifile, ierr)
+            else
+                call s_mpi_abort('File '//trim(file_loc)//' is missing. Exiting...')
+            end if
+
+            ! Assigning local cell boundary locations
+            y_cb(-1:n) = y_cb_glb((start_idx(2) - 1):(start_idx(2) + n))
+            ! Computing the cell width distribution
+            dy(0:n) = y_cb(0:n) - y_cb(-1:n - 1)
+            ! Computing the cell center locations
+            y_cc(0:n) = y_cb(-1:n - 1) + dy(0:n)/2d0
+
+            if (p > 0) then
+                ! Read in cell boundary locations in z-direction
+                file_loc = trim(case_dir)//'/restart_data'//trim(mpiiofs)//'z_cb.dat'
+                inquire (FILE=trim(file_loc), EXIST=file_exist)
+
+                if (file_exist) then
+                    data_size = p_glb + 2
+                    call MPI_FILE_OPEN(MPI_COMM_WORLD, file_loc, MPI_MODE_RDONLY, mpi_info_int, ifile, ierr)
+                    call MPI_FILE_READ(ifile, z_cb_glb, data_size, MPI_DOUBLE_PRECISION, status, ierr)
+                    call MPI_FILE_CLOSE(ifile, ierr)
+                else
+                    call s_mpi_abort('File '//trim(file_loc)//'is missing. Exiting...')
+                end if
+
+                ! Assigning local cell boundary locations
+                z_cb(-1:p) = z_cb_glb((start_idx(3) - 1):(start_idx(3) + p))
+                ! Computing the cell width distribution
+                dz(0:p) = z_cb(0:p) - z_cb(-1:p - 1)
+                ! Computing the cell center locations
+                z_cc(0:p) = z_cb(-1:p - 1) + dz(0:p)/2d0
+
+            end if
+        end if
+
+        deallocate (x_cb_glb, y_cb_glb, z_cb_glb)
+
+#endif
+    end subroutine s_reinitialize_grid
+
     !> The purpose of this subroutine is to populate the buffers
         !!          of the grid variables, which are constituted of the cell-
         !!          boundary locations and cell-width distributions, based on
@@ -1278,17 +1370,37 @@ contains
 
         ! Time-stepping loop controls
 
-        t_step = t_step + 1
+        if (mod(t_step - t_step_start, t_step_save) == 0 .and. (t_step - t_step_start) > 0) then
+            call s_perform_load_balance(time_avg)
+        endif
 
+        t_step = t_step + 1
     end subroutine s_perform_time_step
 
     subroutine s_perform_load_balance(time_avg)
         real(kind(0d0)), intent(in) :: time_avg
+        integer :: i, l, k, j
 
-        return
+        call s_repopulate_variables_buffers(q_cons_ts(1)%vf, pb_ts(1)%sf, mv_ts(1)%sf)
+
         call s_mpi_loadbalance_computational_domain(time_avg)
 
-        !> Need to re-initialize all the grid related variables after load balancing
+        call s_reinitialize_global_parameters_module()
+
+        call s_reinitialize_mpi_proxy_module()
+
+        call s_reinitialize_grid()
+
+        call s_reinitialize_time_steppers_module()
+
+        call s_reinitialize_rhs_module()
+
+        call s_populate_grid_variables_buffers()
+
+        call s_reinitialize_weno_module()
+
+        call s_repopulate_variables_buffers(q_cons_ts(1)%vf, pb_ts(1)%sf, mv_ts(1)%sf)
+
     end subroutine s_perform_load_balance
 
     subroutine s_save_performance_metrics(t_step, time_avg, time_final, io_time_avg, io_time_final, proc_time, io_proc_time, file_exists, start, finish, nt)

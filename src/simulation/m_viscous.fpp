@@ -975,6 +975,7 @@ contains
         type(int_bounds_info), intent(in) :: ix, iy, iz
 
         integer :: weno_dir !< Coordinate direction of the WENO reconstruction
+        integer :: s1, s2, s3
 
         integer :: i, j, k, l
 
@@ -984,16 +985,19 @@ contains
             is1_viscous = ix; is2_viscous = iy; is3_viscous = iz
             weno_dir = 1; is1_viscous%beg = is1_viscous%beg + weno_polyn
             is1_viscous%end = is1_viscous%end - weno_polyn
+            s1 = startx ; s2 = starty ; s3 = startz
 
         elseif (norm_dir == 2) then
             is1_viscous = iy; is2_viscous = ix; is3_viscous = iz
             weno_dir = 2; is1_viscous%beg = is1_viscous%beg + weno_polyn
             is1_viscous%end = is1_viscous%end - weno_polyn
+            s1 = starty ; s2 = startx ; s3 = startz
 
         else
             is1_viscous = iz; is2_viscous = iy; is3_viscous = ix
             weno_dir = 3; is1_viscous%beg = is1_viscous%beg + weno_polyn
             is1_viscous%end = is1_viscous%end - weno_polyn
+            s1 = startz ; s2 = starty ; s3 = startx
 
         end if
 
@@ -1004,18 +1008,21 @@ contains
                 call s_weno(v_vf(iv%beg:iv%end), &
                             vL_x(:, :, :, iv%beg:iv%end), vL_y(:, :, :, iv%beg:iv%end), vL_z(:, :, :, iv%beg:iv%end), vR_x(:, :, :, iv%beg:iv%end), vR_y(:, :, :, iv%beg:iv%end), vR_z(:, :, :, iv%beg:iv%end), &
                             norm_dir, weno_dir, &
-                            is1_viscous, is2_viscous, is3_viscous)
+                            is1_viscous, is2_viscous, is3_viscous, &
+                            s1, s2, s3)
             else
                 call s_weno(v_vf(iv%beg:iv%end), &
                             vL_x(:, :, :, iv%beg:iv%end), vL_y(:, :, :, iv%beg:iv%end), vL_z(:, :, :, :), vR_x(:, :, :, iv%beg:iv%end), vR_y(:, :, :, iv%beg:iv%end), vR_z(:, :, :, :), &
                             norm_dir, weno_dir, &
-                            is1_viscous, is2_viscous, is3_viscous)
+                            is1_viscous, is2_viscous, is3_viscous, &
+                            s1, s2, s3)
             end if
         else
             call s_weno(v_vf(iv%beg:iv%end), &
                         vL_x(:, :, :, iv%beg:iv%end), vL_y(:, :, :, :), vL_z(:, :, :, :), vR_x(:, :, :, iv%beg:iv%end), vR_y(:, :, :, :), vR_z(:, :, :, :), &
                         norm_dir, weno_dir, &
-                        is1_viscous, is2_viscous, is3_viscous)
+                        is1_viscous, is2_viscous, is3_viscous, &
+                        s1, s2, s3)
         end if
 
         if (viscous) then
@@ -1075,6 +1082,7 @@ contains
         integer, intent(IN) :: norm_dir
 
         integer :: weno_dir !< Coordinate direction of the WENO reconstruction
+        integer :: s1, s2, s3
 
         integer :: i, j, k, l
         ! Reconstruction in s1-direction ===================================
@@ -1083,16 +1091,19 @@ contains
             is1_viscous = ix; is2_viscous = iy; is3_viscous = iz
             weno_dir = 1; is1_viscous%beg = is1_viscous%beg + weno_polyn
             is1_viscous%end = is1_viscous%end - weno_polyn
+            s1 = startx; s2 = starty; s3 = startz
 
         elseif (norm_dir == 2) then
             is1_viscous = iy; is2_viscous = ix; is3_viscous = iz
             weno_dir = 2; is1_viscous%beg = is1_viscous%beg + weno_polyn
             is1_viscous%end = is1_viscous%end - weno_polyn
+            s1 = starty; s2 = startx; s3 = startz
 
         else
             is1_viscous = iz; is2_viscous = iy; is3_viscous = ix
             weno_dir = 3; is1_viscous%beg = is1_viscous%beg + weno_polyn
             is1_viscous%end = is1_viscous%end - weno_polyn
+            s1 = startz; s2 = starty; s3 = startx
 
         end if
 
@@ -1104,19 +1115,22 @@ contains
                 call s_weno(v_vf(iv%beg:iv%end), &
                             vL_x(:, :, :, iv%beg:iv%end), vL_y(:, :, :, iv%beg:iv%end), vL_z(:, :, :, iv%beg:iv%end), vR_x(:, :, :, iv%beg:iv%end), vR_y(:, :, :, iv%beg:iv%end), vR_z(:, :, :, iv%beg:iv%end), &
                             norm_dir, weno_dir, &
-                            is1_viscous, is2_viscous, is3_viscous)
+                            is1_viscous, is2_viscous, is3_viscous, &
+                            s1, s2, s3)
             else
                 call s_weno(v_vf(iv%beg:iv%end), &
                             vL_x(:, :, :, iv%beg:iv%end), vL_y(:, :, :, iv%beg:iv%end), vL_z(:, :, :, :), vR_x(:, :, :, iv%beg:iv%end), vR_y(:, :, :, iv%beg:iv%end), vR_z(:, :, :, :), &
                             norm_dir, weno_dir, &
-                            is1_viscous, is2_viscous, is3_viscous)
+                            is1_viscous, is2_viscous, is3_viscous, &
+                            s1, s2, s3)
             end if
         else
 
             call s_weno(v_vf(iv%beg:iv%end), &
                         vL_x(:, :, :, iv%beg:iv%end), vL_y(:, :, :, :), vL_z(:, :, :, :), vR_x(:, :, :, iv%beg:iv%end), vR_y(:, :, :, :), vR_z(:, :, :, :), &
                         norm_dir, weno_dir, &
-                        is1_viscous, is2_viscous, is3_viscous)
+                        is1_viscous, is2_viscous, is3_viscous, &
+                        s1, s2, s3)
         end if
 
         if (viscous) then

@@ -20,7 +20,8 @@ module m_boundary_conditions
 
     private; 
     public :: s_populate_variables_buffers, &
-              s_populate_capillary_buffers
+              s_populate_capillary_buffers, &
+              s_repopulate_variables_buffers
 
 contains
 
@@ -213,6 +214,52 @@ contains
         ! END: Population of Buffers in z-direction ========================
 
     end subroutine s_populate_variables_buffers
+
+    subroutine s_repopulate_variables_buffers(q_prim_vf, pb, mv)
+
+        type(scalar_field), dimension(sys_size), intent(inout) :: q_prim_vf
+        real(kind(0d0)), dimension(startx:, starty:, startz:, 1:, 1:), intent(inout) :: pb, mv
+
+        integer :: bc_loc, bc_dir
+
+        ! Population of Buffers in x-direction =============================
+
+        if (bc_x%beg > -3) then
+            call s_mpi_sendrecv_variables_buffers( &
+                q_prim_vf, pb, mv, 1, -1)
+        endif
+
+        if (bc_x%end > -3) then
+            call s_mpi_sendrecv_variables_buffers( &
+                q_prim_vf, pb, mv, 1, 1)
+        endif
+
+        if (n == 0) return
+
+        if (bc_y%beg > -3) then
+            call s_mpi_sendrecv_variables_buffers( &
+                q_prim_vf, pb, mv, 2, -1)
+        endif
+
+        if (bc_y%end > -3) then
+            call s_mpi_sendrecv_variables_buffers( &
+                q_prim_vf, pb, mv, 2, 1)
+        endif
+
+        if (p == 0) return
+
+        if (bc_z%beg > -3) then
+            call s_mpi_sendrecv_variables_buffers( &
+                q_prim_vf, pb, mv, 3, -1)
+        endif
+
+        if (bc_z%end > -3) then
+            call s_mpi_sendrecv_variables_buffers( &
+                q_prim_vf, pb, mv, 3, 1)
+        endif
+        ! Population of Buffers in y-direction =============================
+
+    end subroutine s_repopulate_variables_buffers
 
     subroutine s_ghost_cell_extrapolation(q_prim_vf, pb, mv, bc_dir, bc_loc)
 

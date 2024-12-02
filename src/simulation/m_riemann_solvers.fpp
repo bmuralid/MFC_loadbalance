@@ -2136,6 +2136,20 @@ contains
                                     pi_inf_R = pi_inf_R + qR_prim_rs${XYZ}$_vf(j + 1, k, l, E_idx + i)*pi_infs(i)
                                     qv_R = qv_R + qR_prim_rs${XYZ}$_vf(j + 1, k, l, i)*qvs(i)
                                 end do
+                                ! if ( rho_L < epsilon(0.0d0)) then
+                                !     print *, "proc_coords", proc_coords
+                                !     print *, "rhoL, qL_prim_rs${XYZ}$_vf", rho_L , qL_prim_rs${XYZ}$_vf(j, k, l, :)
+                                !     print *, " j is1%beg is1%end", j, is1%beg, is1%end 
+                                !     print *, " k is2%beg is2%end", k, is2%beg, is2%end
+                                !     error stop "Negative density in Riemann solver"
+                                ! endif
+                                ! if ( rho_R < epsilon(0.0d0)) then
+                                !     print *, "proc_coords", proc_coords
+                                !     print *, "rhoR, qR_prim_rs${XYZ}$_vf", rho_R , qR_prim_rs${XYZ}$_vf(j+1, k, l, :)
+                                !     print *, " j is1%beg is1%end", j, is1%beg, is1%end 
+                                !     print *, " k is2%beg is2%end", k, is2%beg, is2%end
+                                !     error stop "Negative density in Riemann solver"
+                                ! endif
 
                                 if (viscous) then
                                     !$acc loop seq
@@ -2224,6 +2238,7 @@ contains
                                     E_L = gamma_L*pres_L + pi_inf_L + 5d-1*rho_L*vel_L_rms + qv_L
 
                                     E_R = gamma_R*pres_R + pi_inf_R + 5d-1*rho_R*vel_R_rms + qv_R
+
 
                                     H_L = (E_L + pres_L)/rho_L
                                     H_R = (E_R + pres_R)/rho_R
@@ -2358,6 +2373,36 @@ contains
                                         *(vel_L(idx1) + s_M*(xi_L - 1d0)) &
                                         + xi_P*qR_prim_rs${XYZ}$_vf(j + 1, k, l, i) &
                                         *(vel_R(idx1) + s_P*(xi_R - 1d0))
+                                    ! ! Check for NaN NTBC
+                                    ! if (ieee_is_nan(flux_rs${XYZ}$_vf(j, k, l, i))) then
+                                    !     print *, "flux_rs${XYZ}$_vf(j, k, l, i) is NaN"
+                                    !     print *, "j, k, l, i", j, k, l, i
+                                    !     print *, "xi_M, xi_P", xi_M, xi_P
+                                    !     print *, "qL_prim_rs${XYZ}$_vf(j, k, l, i), qR_prim_rs${XYZ}$_vf(j + 1, k, l, i)", qL_prim_rs${XYZ}$_vf(j, k, l, i), qR_prim_rs${XYZ}$_vf(j + 1, k, l, i)
+                                    !     print *, "vel_L(idx1), vel_R(idx1)", vel_L(idx1), vel_R(idx1)
+                                    !     print *, "s_M, s_P", s_M, s_P
+                                    !     print *, "xi_L, xi_R", xi_L, xi_R
+                                    !     print *, "rho_L, rho_R", rho_L, rho_R
+                                    !     print *, "s_L, s_R", s_L, s_R
+                                    !     print *, "E_L, E_R", E_L, E_R
+                                    !     print *, "pres_L, pres_R", pres_L, pres_R
+                                    !     print *, "gamma_L, gamma_R", gamma_L, gamma_R
+                                    !     print *, "pi_inf_L, pi_inf_R", pi_inf_L, pi_inf_R
+                                    !     print *, "qv_L, qv_R", qv_L, qv_R
+                                    !     print *, "rho_avg, gamma_avg, H_avg", rho_avg, gamma_avg, H_avg
+                                    !     print *, "alpha_L, alpha_R", alpha_L, alpha_R
+                                    !     print *, "vel_L_rms, vel_R_rms", vel_L_rms, vel_R_rms
+                                    !     print *, "c_L, c_R", c_L, c_R
+                                    !     print *, "c_avg", c_avg
+                                    !     print *, "s_S", s_S
+                                    !     print *, "pcorr", pcorr
+                                    !     print *, "Re_L, Re_R", Re_L, Re_R
+                                    !     print *, "Re_avg_rs${XYZ}$_vf(j, k, l, :)", Re_avg_rs${XYZ}$_vf(j, k, l, :)
+                                    !     print *, "low_Mach", low_Mach
+                                    !     print *, "bubbles", bubbles
+                                    !     error stop "flux_rs${XYZ}$_vf(j, k, l, i) is NaN"
+                                    ! end if
+
                                 end do
 
                                 ! Source for volume fraction advection equation
