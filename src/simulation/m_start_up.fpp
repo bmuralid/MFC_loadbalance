@@ -953,8 +953,8 @@ contains
         allocate (z_cb_glb(-1:p_glb))
 
         !> Cebug
-        print*, 'Reinitializing grid', proc_rank
-        print *, "m , n, p", m, n, p
+        ! print*, 'Reinitializing grid', proc_rank
+        ! print *, "m , n, p", m, n, p
 
         ! Read in cell boundary locations in x-direction
         file_loc = trim(case_dir)//'/restart_data'//trim(mpiiofs)//'x_cb.dat'
@@ -1022,6 +1022,7 @@ contains
         end if
 
         deallocate (x_cb_glb, y_cb_glb, z_cb_glb)
+        !$acc update device(dx, dy, dz, x_cb, x_cc, y_cb, y_cc, z_cb, z_cc)
 
 #endif
     end subroutine s_reinitialize_grid
@@ -1235,6 +1236,7 @@ contains
         end do
 
         ! END: Population of Buffers in z-direction ========================
+        !$acc update device(dx, dy, dz, x_cb, x_cc, y_cb, y_cc, z_cb, z_cc)
 
     end subroutine s_populate_grid_variables_buffers
 
@@ -1368,8 +1370,6 @@ contains
 
         if (relax) call s_infinite_relaxation_k(q_cons_ts(1)%vf)
 
-        ! Time-stepping loop controls
-
         if (mod(t_step - t_step_start, t_step_save) == 0 .and. (t_step - t_step_start) > 0) then
             call s_perform_load_balance(time_avg)
         endif
@@ -1378,7 +1378,7 @@ contains
     end subroutine s_perform_time_step
 
     subroutine s_perform_load_balance(time_avg)
-        real(kind(0d0)), intent(in) :: time_avg
+        real(kind(0d0)), intent(inout) :: time_avg
         integer :: i, l, k, j
 
         call s_repopulate_variables_buffers(q_cons_ts(1)%vf, pb_ts(1)%sf, mv_ts(1)%sf)
@@ -1387,7 +1387,7 @@ contains
 
         call s_reinitialize_global_parameters_module()
 
-        call s_reinitialize_mpi_proxy_module()
+        ! call s_reinitialize_mpi_proxy_module()
 
         call s_reinitialize_grid()
 
@@ -1400,6 +1400,9 @@ contains
         call s_reinitialize_weno_module()
 
         call s_repopulate_variables_buffers(q_cons_ts(1)%vf, pb_ts(1)%sf, mv_ts(1)%sf)
+
+        !> reset time avg
+        time_avg = 0d0
 
     end subroutine s_perform_load_balance
 

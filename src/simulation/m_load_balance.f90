@@ -25,7 +25,7 @@ contains
     !>  The goal of this subroutine is to rebalance the number of points in each direction among the processors
         !! based on the load factor such that the computational load is balanced among the processors.
     subroutine s_mpi_loadbalance_computational_domain(time_avg, opt)
-        real(kind(0d0)), intent(in) :: time_avg
+        real(kind(0d0)), intent(inout) :: time_avg
         integer, intent(in), optional :: opt
 
         integer :: i, j, k, ierr
@@ -40,6 +40,21 @@ contains
         integer, dimension(num_procs) :: buffer
         real(kind(0d0)) :: proc_time_std
         logical :: file_exists
+        integer :: buff_min
+        integer, parameter  :: buff_min_threshold = 50
+
+        buff_min = minval(buff_size_lb)
+
+        ! get the minimum buff_min across all processes 
+        if (proc_rank == 0) then
+            call MPI_ALLREDUCE(MPI_IN_PLACE, buff_min, 1, MPI_INTEGER, MPI_MIN, MPI_COMM_WORLD, ierr)
+        else
+            call MPI_ALLREDUCE(buff_min, buff_min, 1, MPI_INTEGER, MPI_MIN, MPI_COMM_WORLD, ierr)
+        end if
+
+        ! if (buff_min < buff_min_threshold) then
+        !     return
+        ! end if
 
         call mpi_bcast_time_step_values(proc_time, time_avg)
 
@@ -56,9 +71,9 @@ contains
 
         call MPI_BCAST(proc_time_std, 1, MPI_DOUBLE_PRECISION, 0, MPI_COMM_WORLD, ierr)
         ! if the std deviation is less than 10% of the average time, then return
-        ! if (proc_time_std <= 0.05d0) then
-        !     return
-        ! end if
+        if (proc_time_std <= 0.001d0) then
+            return
+        end if
 
         if (proc_rank == 0) then
             print *, 'Repartitioning the computational domain'
@@ -131,6 +146,7 @@ contains
             call MPI_ALLGATHER(n, 1, MPI_INTEGER, proc_counts_y, 1, MPI_INTEGER, MPI_COMM_WORLD, ierr)
         endif
 
+
         if (proc_rank == 0) then
             inquire (FILE='repartitioning.dat', EXIST=file_exists)
             if (file_exists) then
@@ -139,6 +155,8 @@ contains
                 open(1, file='repartitioning.dat', status='new')
                 write(1, '(I5)') num_procs
             endif
+            write(1, '(A, I5)') 'buff min: ', buff_min
+            write(1, '(A, F10.5)') 'std dev: ', proc_time_std
             write(1, '(I5, 9I10)') proc_counts_x 
             if (n > 0) then
                 write(1, '(I5, 9I10)') proc_counts_y

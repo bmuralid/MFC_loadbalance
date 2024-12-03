@@ -531,6 +531,7 @@ contains
 
                 end if
 
+
                 ! Verifying that a valid decomposition of the computational
                 ! domain has been established. If not, the simulation exits.
                 if (proc_rank == 0 .and. ierr == -1) then
@@ -762,7 +763,7 @@ contains
        ! ==================================================================
 
        !> Initial call to redistribute the computational domain
-       if (proc_coords_x(proc_rank + 1) == 1 .and. proc_coords_y(proc_rank + 1) == 1 ) then
+       if (proc_coords_x(proc_rank + 1) == 0 .and. proc_coords_y(proc_rank + 1) == 0 ) then
            time_avg = 4.0d0
        else
            time_avg = 1.0d0

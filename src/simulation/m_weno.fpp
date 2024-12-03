@@ -621,8 +621,9 @@ contains
 
         type(scalar_field), dimension(1:), intent(in) :: v_vf
         integer, intent(in) :: sx, sy, sz
-        real(kind(0d0)), dimension(sx:, sy:, sz:, 1:), intent(inout) :: vL_rs_vf_x, vL_rs_vf_y, vL_rs_vf_z
-        real(kind(0d0)), dimension(sx:, sy:, sz:, 1:), intent(inout) :: vR_rs_vf_x, vR_rs_vf_y, vR_rs_vf_z
+        real(kind(0d0)), dimension(startx:, starty:, startz:, 1:), intent(inout) :: vL_rs_vf_x, vR_rs_vf_x
+        real(kind(0d0)), dimension(starty:, startx:, startz:, 1:), intent(inout) :: vL_rs_vf_y, vR_rs_vf_y
+        real(kind(0d0)), dimension(startz:, starty:, startx:, 1:), intent(inout) :: vL_rs_vf_z, vR_rs_vf_z
         integer, intent(in) :: norm_dir
         integer, intent(in) :: weno_dir
         type(int_bounds_info), intent(in) :: is1_weno_d, is2_weno_d, is3_weno_d

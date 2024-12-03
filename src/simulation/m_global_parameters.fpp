@@ -1002,8 +1002,10 @@ contains
             allocate (MPI_IO_DATA%var(1:sys_size))
         end if
 
-        buff_size_lb = 50  ! NTBC
-        !$acc update_device(buff_size_lb)
+
+        buff_size_lb = 100
+
+        !$acc update device(buff_size_lb)
         do i = 1, sys_size
             allocate (MPI_IO_DATA%var(i)%sf(-buff_size_lb(1) + 0:m + buff_size_lb(2), &
                 -buff_size_lb(3) + 0:n + buff_size_lb(4), &
@@ -1154,6 +1156,7 @@ contains
         buff_size_lb(2) = buff_size_lb(2)  - diff_count_idx(1) - diff_start_idx(1)
         buff_size_lb(3) = buff_size_lb(3) + diff_start_idx(2)
         buff_size_lb(4) = buff_size_lb(4)  - diff_count_idx(2) - diff_start_idx(2)
+        !$acc update device(buff_size_lb)
        
 
         ! Configuring Coordinate Direction Indexes =========================
@@ -1190,23 +1193,23 @@ contains
 
         !$acc update device(startx, starty, startz)
 
-        @:DEALLOCATE(x_cb, x_cc, dx)
-        ! Allocating grid variables for the x-, y- and z-directions
-        @:ALLOCATE(x_cb(-1 - buff_size - buff_size_lb(1):m + buff_size + buff_size_lb(2)))
-        @:ALLOCATE(x_cc(-buff_size - buff_size_lb(1) :m + buff_size + buff_size_lb(2)))
-        @:ALLOCATE(dx(-buff_size - buff_size_lb(1):m + buff_size + buff_size_lb(2)))
+        ! @:DEALLOCATE(x_cb, x_cc, dx)
+        ! ! Allocating grid variables for the x-, y- and z-directions
+        ! @:ALLOCATE(x_cb(-1 - buff_size - buff_size_lb(1):m + buff_size + buff_size_lb(2)))
+        ! @:ALLOCATE(x_cc(-buff_size - buff_size_lb(1) :m + buff_size + buff_size_lb(2)))
+        ! @:ALLOCATE(dx(-buff_size - buff_size_lb(1):m + buff_size + buff_size_lb(2)))
 
-        if (n == 0) return; 
-        @:DEALLOCATE(y_cb, y_cc, dy)
-        @:ALLOCATE(y_cb(-1 - buff_size - buff_size_lb(3):n + buff_size + buff_size_lb(4)))
-        @:ALLOCATE(y_cc(-buff_size -buff_size_lb(3):n + buff_size + buff_size_lb(4)))
-        @:ALLOCATE(dy(-buff_size - buff_size_lb(3):n + buff_size +  buff_size_lb(4)))
+        ! if (n == 0) return; 
+        ! @:DEALLOCATE(y_cb, y_cc, dy)
+        ! @:ALLOCATE(y_cb(-1 - buff_size - buff_size_lb(3):n + buff_size + buff_size_lb(4)))
+        ! @:ALLOCATE(y_cc(-buff_size -buff_size_lb(3):n + buff_size + buff_size_lb(4)))
+        ! @:ALLOCATE(dy(-buff_size - buff_size_lb(3):n + buff_size +  buff_size_lb(4)))
 
-        if (p == 0) return; 
-        @:DEALLOCATE(z_cb, z_cc, dz)
-        @:ALLOCATE(z_cb(-1 - buff_size -buff_size_lb(5):p + buff_size + buff_size_lb(6)))
-        @:ALLOCATE(z_cc(-buff_size - buff_size_lb(5):p + buff_size + buff_size_lb(6)))
-        @:ALLOCATE(dz(-buff_size - buff_size_lb(5) :p + buff_size +  buff_size_lb(6)))
+        ! if (p == 0) return; 
+        ! @:DEALLOCATE(z_cb, z_cc, dz)
+        ! @:ALLOCATE(z_cb(-1 - buff_size -buff_size_lb(5):p + buff_size + buff_size_lb(6)))
+        ! @:ALLOCATE(z_cc(-buff_size - buff_size_lb(5):p + buff_size + buff_size_lb(6)))
+        ! @:ALLOCATE(dz(-buff_size - buff_size_lb(5) :p + buff_size +  buff_size_lb(6)))
     end subroutine s_reinitialize_global_parameters_module
 
     !> Initializes parallel infrastructure

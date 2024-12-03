@@ -277,17 +277,20 @@ contains
 
         integer :: i, j !< Generic loop iterators
 
+
         do i = 1, num_ts
             do j = 1, sys_size
+                !!$acc update host(q_cons_ts(i)%vf(j)%sf)
 
                 q_cons_ts(i)%vf(j)%sf(idwbuff(1)%beg:, &
                     idwbuff(2)%beg:, &
                     idwbuff(3)%beg:) => q_cons_ts(i)%vf(j)%sf
+                !!$acc update device(q_cons_ts(i)%vf(j)%sf)
+                !!$acc update host(q_cons_ts(i)%vf(j)%sf)
                 
             end do
             ! @:ACC_SETUP_VFs(q_cons_ts(i))
         end do
-
         ! Allocating the cell-average primitive ts variables
         if (probe_wrt) then
             do i = 0, 3
@@ -721,6 +724,9 @@ contains
         end if
 
         call s_compute_rhs(q_cons_ts(1)%vf, q_prim_vf, rhs_vf, pb_ts(1)%sf, rhs_pb, mv_ts(1)%sf, rhs_mv, t_step, time_avg)
+#ifdef DEBUG        
+        print *, "Done first compute_rhs"
+#endif
 
         if (run_time_info) then
             call s_write_run_time_information(q_prim_vf, t_step)
@@ -806,6 +812,9 @@ contains
         ! Stage 2 of 3 =====================================================
 
         call s_compute_rhs(q_cons_ts(2)%vf, q_prim_vf, rhs_vf, pb_ts(2)%sf, rhs_pb, mv_ts(2)%sf, rhs_mv, t_step, time_avg)
+#ifdef DEBUG        
+        print *, "Done second compute_rhs"
+#endif
 
         !$acc parallel loop collapse(4) gang vector default(present)
         do i = 1, sys_size
@@ -878,6 +887,9 @@ contains
 
         ! Stage 3 of 3 =====================================================
         call s_compute_rhs(q_cons_ts(2)%vf, q_prim_vf, rhs_vf, pb_ts(2)%sf, rhs_pb, mv_ts(2)%sf, rhs_mv, t_step, time_avg)
+#ifdef DEBUG        
+        print *, "Done third compute_rhs"
+#endif
 
         !$acc parallel loop collapse(4) gang vector default(present)
         do i = 1, sys_size

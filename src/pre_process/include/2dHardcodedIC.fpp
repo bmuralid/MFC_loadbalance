@@ -99,7 +99,13 @@
             pInt = pref + rhoH*9.81*(1.2 - intH)
             q_prim_vf(E_idx)%sf(i, j, 0) = pInt + rhoL*9.81*(intH - y_cc(j))
         end if
-
+    case (205) ! Sedov blast problem
+        r = dsqrt(x_cc(i)**2 + y_cc(j)**2)
+        q_prim_vf(E_idx)%sf(i, j, 0) = 0.67e-4
+        q_prim_vf(contxb)%sf(i, j, 0) = 1.0
+        if ( r < 0.007d0) then
+            q_prim_vf(E_idx)%sf(i, j, 0) = 1.85e6
+        endif
     case default
         if (proc_rank == 0) then
             call s_int_to_str(patch_id, iStr)
