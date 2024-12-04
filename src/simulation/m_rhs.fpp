@@ -633,18 +633,15 @@ contains
         !$acc update device(idwbuff, idwbuff)
 
         do l = 1, sys_size
-            !!$acc update host(q_cons_qp%vf(l)%sf)
             q_cons_qp%vf(l)%sf(idwbuff(1)%beg:, &
                 idwbuff(2)%beg:, &
                 idwbuff(3)%beg:) =>  q_cons_qp%vf(l)%sf
-            !!$acc update device(q_cons_qp%vf(l)%sf)
         end do
 
         do l = mom_idx%beg, E_idx
             q_prim_qp%vf(l)%sf(idwbuff(1)%beg:,  &
                 idwbuff(2)%beg:, &
                 idwbuff(3)%beg:) =>  q_prim_qp%vf(l)%sf
-            !$acc update device(q_prim_qp%vf(l)%sf)
         end do
 
         if (surface_tension) then
@@ -680,8 +677,8 @@ contains
         if (surface_tension) then
             q_prim_qp%vf(c_idx)%sf => &
                 q_cons_qp%vf(c_idx)%sf
-            !!$acc enter data copyin(q_prim_qp%vf(c_idx)%sf)
-            !!$acc enter data attach(q_prim_qp%vf(c_idx)%sf)
+            !$acc enter data copyin(q_prim_qp%vf(c_idx)%sf)
+            !$acc enter data attach(q_prim_qp%vf(c_idx)%sf)
         end if
 
         if (viscous) then
@@ -729,7 +726,6 @@ contains
                 qR_prim(i)%vf(l)%sf(idwbuff(1)%beg:, &
                     idwbuff(2)%beg:, &
                     idwbuff(3)%beg:) => qR_prim(i)%vf(l)%sf
-                !$acc update device(qL_prim(i)%vf(l)%sf, qR_prim(i)%vf(l)%sf)
             end do
             ! @:ACC_SETUP_VFs(qL_prim(i), qR_prim(i))
         end do
@@ -965,8 +961,6 @@ contains
                     flux_gsrc_n(i)%vf(l)%sf(idwbuff(1)%beg:, &
                             idwbuff(2)%beg:, &
                             idwbuff(3)%beg:) => flux_gsrc_n(i)%vf(l)%sf
-                    !$acc update device(flux_n(i)%vf(l)%sf)
-                    !$acc update device(flux_gsrc_n(i)%vf(l)%sf)
                 end do
 
                 if (viscous .or. surface_tension) then
@@ -1081,41 +1075,6 @@ contains
 
         call cpu_time(t_start)
         ! Association/Population of Working Variables ======================
-        ! print *, "idwbuff(1)%beg, idwbuff(1)%end", idwbuff(1)%beg, idwbuff(1)%end 
-        ! print *, "idwbuff(2)%beg, idwbuff(2)%end", idwbuff(2)%beg, idwbuff(2)%end
-        ! do i = 1, sys_size
-        !     print *, 'lbound(q_cons_vf(1)%sf, 1)', lbound(q_cons_vf(i)%sf)  
-        !     print *, 'ubound(q_cons_vf(1)%sf, 1)', ubound(q_cons_vf(i)%sf)
-        !     print *, 'lbound(q_cons_qp%vf(1)%sf, 1)', lbound(q_cons_qp%vf(i)%sf)
-        !     print *, 'ubound(q_cons_qp%vf(1)%sf, 1)',  ubound(q_cons_qp%vf(i)%sf)
-        ! enddo
-
-        do i = 1, sys_size
-            !$acc update device(q_cons_vf(i)%sf)
-            !$acc update device(q_cons_qp%vf(i)%sf)
-        enddo
-        !!$acc parallel loop collapse(4) gang vector default(present)
-        !do i = 1, sys_size
-        !    do l = idwbuff(3)%beg, idwbuff(3)%end
-        !        do k = idwbuff(2)%beg, idwbuff(2)%end
-        !            do j = idwbuff(1)%beg, idwbuff(1)%end
-        !                q_cons_qp%vf(i)%sf(j, k, l) = (1.0d0 + epsilon(0.0d0)) * q_cons_qp%vf(i)%sf(j, k, l)
-        !            end do
-        !        end do
-        !    end do
-        !end do
-
-        !!$acc parallel loop collapse(4) gang vector default(present)
-        !do i = 1, sys_size
-        !    do l = idwbuff(3)%beg, idwbuff(3)%end
-        !        do k = idwbuff(2)%beg, idwbuff(2)%end
-        !            do j = idwbuff(1)%beg, idwbuff(1)%end
-        !                q_cons_vf(i)%sf(j, k, l) = (1.0d0 + epsilon(0.0d0) )* q_cons_vf(i)%sf(j, k, l)
-        !            end do
-        !        end do
-        !    end do
-        !end do
-
         !$acc parallel loop collapse(4) gang vector default(present)
         do i = 1, sys_size
             do l = idwbuff(3)%beg, idwbuff(3)%end
@@ -1213,13 +1172,6 @@ contains
         do id = 1, num_dims
 
             ! Reconstructing Primitive/Conservative Variables ===============
-            ! if (id == 1) then
-            !     s1 = startx ; s2 = starty ; s3 = startz
-            ! else if (id == 2) then
-            !     s1 = starty ; s2 = startx ; s3 = startz
-            ! else
-            !     s1 = startz ; s2 = starty ; s3 = startx
-            ! end if
 
             call nvtxStartRange("RHS-WENO")
 
