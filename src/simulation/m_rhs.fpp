@@ -631,32 +631,39 @@ contains
 
         !$acc enter data copyin(idwbuff, idwbuff)
         !$acc update device(idwbuff, idwbuff)
+        !$acc update device(startx, starty, startz, m, n, p, buff_size)
 
         do l = 1, sys_size
+            !$acc update host(q_cons_qp%vf(l)%sf)
+            !$acc exit data detach(q_cons_qp%vf(l)%sf)
             q_cons_qp%vf(l)%sf(idwbuff(1)%beg:, &
                 idwbuff(2)%beg:, &
                 idwbuff(3)%beg:) =>  q_cons_qp%vf(l)%sf
+            !$acc enter data attach(q_cons_qp%vf(l)%sf)
+            !$acc update device(q_cons_qp%vf(l)%sf)
         end do
 
         do l = mom_idx%beg, E_idx
+            !$acc exit data detach(q_prim_qp%vf(l)%sf)
             q_prim_qp%vf(l)%sf(idwbuff(1)%beg:,  &
                 idwbuff(2)%beg:, &
                 idwbuff(3)%beg:) =>  q_prim_qp%vf(l)%sf
+            !$acc enter data attach(q_prim_qp%vf(l)%sf)
         end do
 
         if (surface_tension) then
-            ! This assumes that the color function advection equation is
-            ! the last equation. If this changes then this logic will
-            ! need updated
             do l = adv_idx%end + 1, sys_size - 1
+                !$acc exit data detach(q_prim_qp%vf(l)%sf)
                 q_prim_qp%vf(l)%sf(idwbuff(1)%beg:, idwbuff(2)%beg:, idwbuff(3)%beg:) => &
                 q_prim_qp%vf(l)%sf
+                !$acc enter data attach(q_prim_qp%vf(l)%sf)
             end do
         else
             do l = adv_idx%end + 1, sys_size
+                !$acc exit data detach(q_prim_qp%vf(l)%sf)
                 q_prim_qp%vf(l)%sf(idwbuff(1)%beg:, idwbuff(2)%beg:, idwbuff(3)%beg:) => &
                 q_prim_qp%vf(l)%sf
-
+                !$acc enter data attach(q_prim_qp%vf(l)%sf)
             end do
 
         end if
@@ -683,15 +690,18 @@ contains
 
         if (viscous) then
             do i = 1, num_dims
+                !$acc exit data detach(tau_Re_vf(cont_idx%end + i)%sf)
                 tau_Re_vf(cont_idx%end + i)%sf(idwbuff(1)%beg:, &
                                                 idwbuff(2)%beg:, &
                                                 idwbuff(3)%beg:) => tau_Re_vf(cont_idx%end + i)%sf
+                !$acc enter data attach(tau_Re_vf(cont_idx%end + i)%sf)
                 ! @:ACC_SETUP_SFs(tau_Re_vf(cont_idx%end + i))
             end do
+            !$acc exit data detach(tau_Re_vf(E_idx)%sf)
             tau_Re_vf(E_idx)%sf(idwbuff(1)%beg:, &
                                 idwbuff(2)%beg:, &
                                 idwbuff(3)%beg:) => tau_Re_vf(E_idx)%sf
-
+            !$acc enter data attach(tau_Re_vf(E_idx)%sf)
             ! @:ACC_SETUP_SFs(tau_Re_vf(E_idx))
         end if
 
@@ -701,31 +711,38 @@ contains
             do i = 0, 2
                 do j = 0, 2
                     do k = 1, nb
+                        !$acc exit data detach(mom_3d(i, j, k)%sf)
                         mom_3d(i, j, k)%sf(idwbuff(1)%beg:, &
                                            idwbuff(2)%beg:, &
                                            idwbuff(3)%beg:) => mom_3d(i, j, k)%sf
+                        !$acc enter data attach(mom_3d(i, j, k)%sf)
                         ! @:ACC_SETUP_SFs(mom_3d(i, j, k))
                     end do
                 end do
             end do
 
             do i = 1, nmomsp
+                !$acc exit data detach(mom_sp(i)%sf)
                 mom_sp(i)%sf(idwbuff(1)%beg:, &
                              idwbuff(2)%beg:, &
                              idwbuff(3)%beg:) => mom_sp(i)%sf
+                !$acc enter data attach(mom_sp(i)%sf)
                 ! @:ACC_SETUP_SFs(mom_sp(i))
             end do
         end if
 
         do i = 1, num_dims
             do l = mom_idx%beg, mom_idx%end
-
+                !$acc exit data detach(qL_prim(i)%vf(l)%sf)
+                !$acc exit data detach(qR_prim(i)%vf(l)%sf)
                 qL_prim(i)%vf(l)%sf(idwbuff(1)%beg:, &
                     idwbuff(2)%beg:, &
                     idwbuff(3)%beg:) => qL_prim(i)%vf(l)%sf
                 qR_prim(i)%vf(l)%sf(idwbuff(1)%beg:, &
                     idwbuff(2)%beg:, &
                     idwbuff(3)%beg:) => qR_prim(i)%vf(l)%sf
+                !$acc enter data attach(qR_prim(i)%vf(l)%sf)
+                !$acc enter data attach(qL_prim(i)%vf(l)%sf)
             end do
             ! @:ACC_SETUP_VFs(qL_prim(i), qR_prim(i))
         end do
@@ -735,85 +752,14 @@ contains
                 idwbuff(2)%beg:, &
                 idwbuff(3)%beg:) => alf_sum%sf
         end if
-        ! END: Allocation/Association of qK_cons_n and qK_prim_n ======
 
-        ! @:DEALLOCATE(qL_rsx_vf, qR_rsx_vf)
-
-        ! @:ALLOCATE(qL_rsx_vf(idwbuff(1)%beg:idwbuff(1)%end, &
-        !     idwbuff(2)%beg:idwbuff(2)%end, idwbuff(3)%beg:idwbuff(3)%end, 1:sys_size))
-        ! @:ALLOCATE(qR_rsx_vf(idwbuff(1)%beg:idwbuff(1)%end, &
-        !     idwbuff(2)%beg:idwbuff(2)%end, idwbuff(3)%beg:idwbuff(3)%end, 1:sys_size))
-
-        ! if (n > 0) then
-
-        !     @:DEALLOCATE(qL_rsy_vf, qR_rsy_vf)
-        !     @:ALLOCATE(qL_rsy_vf(idwbuff(2)%beg:idwbuff(2)%end, &
-        !         idwbuff(1)%beg:idwbuff(1)%end, idwbuff(3)%beg:idwbuff(3)%end, 1:sys_size))
-        !     @:ALLOCATE(qR_rsy_vf(idwbuff(2)%beg:idwbuff(2)%end, &
-        !         idwbuff(1)%beg:idwbuff(1)%end, idwbuff(3)%beg:idwbuff(3)%end, 1:sys_size))
-        ! else
-        !     @:ALLOCATE(qL_rsy_vf(idwbuff(1)%beg:idwbuff(1)%end, &
-        !         idwbuff(2)%beg:idwbuff(2)%end, idwbuff(3)%beg:idwbuff(3)%end, 1:sys_size))
-        !     @:ALLOCATE(qR_rsy_vf(idwbuff(1)%beg:idwbuff(1)%end, &
-        !         idwbuff(2)%beg:idwbuff(2)%end, idwbuff(3)%beg:idwbuff(3)%end, 1:sys_size))
-        ! end if
-        ! ------------------------------------------------------------------
-        ! Debugging recently
-        !-------------------------------------------------------------------
-
-        ! qL_rsx_vf(idwbuff(1)%beg:idwbuff(1)%end, &
-        !     idwbuff(2)%beg:idwbuff(2)%end, idwbuff(3)%beg:idwbuff(3)%end, 1:sys_size) => qL_rsx_vf
-        ! qR_rsx_vf(idwbuff(1)%beg:idwbuff(1)%end, &
-        !     idwbuff(2)%beg:idwbuff(2)%end, idwbuff(3)%beg:idwbuff(3)%end, 1:sys_size) => qR_rsx_vf
-
-        ! if (n > 0) then
-
-        !     ! @:ALLOCATE(qL_rsy_vf(idwbuff(2)%beg:idwbuff(2)%end, &
-        !     !     idwbuff(1)%beg:idwbuff(1)%end, idwbuff(3)%beg:idwbuff(3)%end, 1:sys_size))
-        !     qL_rsy_vf(idwbuff(2)%beg:idwbuff(2)%end, &
-        !         idwbuff(1)%beg:idwbuff(1)%end, idwbuff(3)%beg:idwbuff(3)%end, 1:sys_size) => qL_rsy_vf
-        !     ! @:ALLOCATE(qR_rsy_vf(idwbuff(2)%beg:idwbuff(2)%end, &
-        !     !     idwbuff(1)%beg:idwbuff(1)%end, idwbuff(3)%beg:idwbuff(3)%end, 1:sys_size))
-        !     qR_rsy_vf(idwbuff(2)%beg:idwbuff(2)%end, &
-        !         idwbuff(1)%beg:idwbuff(1)%end, idwbuff(3)%beg:idwbuff(3)%end, 1:sys_size) => qR_rsy_vf
-        ! else
-        !     ! @:ALLOCATE(qL_rsy_vf(idwbuff(1)%beg:idwbuff(1)%end, &
-        !     !     idwbuff(2)%beg:idwbuff(2)%end, idwbuff(3)%beg:idwbuff(3)%end, 1:sys_size))
-        !     qL_rsy_vf(idwbuff(1)%beg:idwbuff(1)%end, &
-        !         idwbuff(2)%beg:idwbuff(2)%end, idwbuff(3)%beg:idwbuff(3)%end, 1:sys_size) => qL_rsy_vf
-        !     ! @:ALLOCATE(qR_rsy_vf(idwbuff(1)%beg:idwbuff(1)%end, &
-        !     !     idwbuff(2)%beg:idwbuff(2)%end, idwbuff(3)%beg:idwbuff(3)%end, 1:sys_size))
-        !     qR_rsy_vf(idwbuff(1)%beg:idwbuff(1)%end, &
-        !         idwbuff(2)%beg:idwbuff(2)%end, idwbuff(3)%beg:idwbuff(3)%end, 1:sys_size) => qR_rsy_vf
-        ! end if
-
-        ! if (p > 0) then
-        !     ! @:ALLOCATE(qL_rsz_vf(idwbuff(3)%beg:idwbuff(3)%end, &
-        !     !     idwbuff(2)%beg:idwbuff(2)%end, idwbuff(1)%beg:idwbuff(1)%end, 1:sys_size))
-        !     qL_rsz_vf(idwbuff(3)%beg:idwbuff(3)%end, &
-        !         idwbuff(2)%beg:idwbuff(2)%end, idwbuff(1)%beg:idwbuff(1)%end, 1:sys_size) => qL_rsz_vf
-
-        !     ! @:ALLOCATE(qR_rsz_vf(idwbuff(3)%beg:idwbuff(3)%end, &
-        !     !     idwbuff(2)%beg:idwbuff(2)%end, idwbuff(1)%beg:idwbuff(1)%end, 1:sys_size))
-        !     qR_rsz_vf(idwbuff(3)%beg:idwbuff(3)%end, &
-        !         idwbuff(2)%beg:idwbuff(2)%end, idwbuff(1)%beg:idwbuff(1)%end, 1:sys_size) => qR_rsz_vf
-        ! else
-        !     ! @:ALLOCATE(qL_rsz_vf(idwbuff(1)%beg:idwbuff(1)%end, &
-        !     !     idwbuff(2)%beg:idwbuff(2)%end, idwbuff(3)%beg:idwbuff(3)%end, 1:sys_size))
-        !     qL_rsz_vf(idwbuff(1)%beg:idwbuff(1)%end, &
-        !         idwbuff(2)%beg:idwbuff(2)%end, idwbuff(3)%beg:idwbuff(3)%end, 1:sys_size) => qL_rsz_vf
-        !     ! @:ALLOCATE(qR_rsz_vf(idwbuff(1)%beg:idwbuff(1)%end, &
-        !     !     idwbuff(2)%beg:idwbuff(2)%end, idwbuff(3)%beg:idwbuff(3)%end, 1:sys_size))
-        !     qR_rsz_vf(idwbuff(1)%beg:idwbuff(1)%end, &
-        !         idwbuff(2)%beg:idwbuff(2)%end, idwbuff(3)%beg:idwbuff(3)%end, 1:sys_size) => qR_rsz_vf
-        ! end if
-
-        ! Allocation of dq_prim_ds_qp ======================================
         if (viscous) then
             do l = mom_idx%beg, mom_idx%end
+                !$acc exit data detach(dqL_prim_dx_n(1)%vf(l)%sf)
                 dq_prim_dx_qp(1)%vf(l)%sf(idwbuff(1)%beg:, &
                           & idwbuff(2)%beg:, &
                           & idwbuff(3)%beg:) => dq_prim_dx_qp(1)%vf(l)%sf
+                !$acc enter data attach(dq_prim_dx_qp(1)%vf(l)%sf)
             end do
 
             ! @:ACC_SETUP_VFs(dq_prim_dx_qp(1))
@@ -821,9 +767,11 @@ contains
             if (n > 0) then
 
                 do l = mom_idx%beg, mom_idx%end
+                    !$acc exit data detach(dq_prim_dy_qp(1)%vf(l)%sf)
                     dq_prim_dy_qp(1)%vf(l)%sf(idwbuff(1)%beg:, &
                               & idwbuff(2)%beg:, &
                               & idwbuff(3)%beg:) => dq_prim_dy_qp(1)%vf(l)%sf
+                    !$acc enter data attach(dq_prim_dy_qp(1)%vf(l)%sf)
                 end do
 
                 ! @:ACC_SETUP_VFs(dq_prim_dy_qp(1))
@@ -831,18 +779,17 @@ contains
                 if (p > 0) then
 
                     do l = mom_idx%beg, mom_idx%end
+                        !$acc exit data detach(dq_prim_dz_qp(1)%vf(l)%sf)
                         dq_prim_dz_qp(1)%vf(l)%sf(idwbuff(1)%beg:, &
                                   & idwbuff(2)%beg:, &
                                   & idwbuff(3)%beg:) => dq_prim_dz_qp(1)%vf(l)%sf
+                        !$acc enter data attach(dq_prim_dz_qp(1)%vf(l)%sf)
                     end do
                     ! @:ACC_SETUP_VFs(dq_prim_dz_qp(1))
                 end if
 
             end if
         end if
-        ! END: Allocation of dq_prim_ds_qp =================================
-
-        ! Allocation/Association of dqK_prim_ds_n =======================
         if (viscous) then
             do i = 1, num_dims
 
@@ -882,150 +829,74 @@ contains
                 ! @:ACC_SETUP_VFs(dqR_prim_dx_n(i), dqR_prim_dy_n(i), dqR_prim_dz_n(i))
             end do
         end if
-        ! END: Allocation/Association of d K_prim_ds_n ==================
-
-        ! if (viscous) then
-        !     if (weno_Re_flux) then
-        !         ! @:ALLOCATE(dqL_rsx_vf(idwbuff(1)%beg:idwbuff(1)%end, &
-        !         !     idwbuff(2)%beg:idwbuff(2)%end, idwbuff(3)%beg:idwbuff(3)%end, mom_idx%beg:mom_idx%end))
-        !         dqL_rsx_vf(idwbuff(1)%beg:idwbuff(1)%end, &
-        !             idwbuff(2)%beg:idwbuff(2)%end, idwbuff(3)%beg:idwbuff(3)%end, mom_idx%beg:mom_idx%end) => dqL_rsx_vf
-        !         ! @:ALLOCATE(dqR_rsx_vf(idwbuff(1)%beg:idwbuff(1)%end, &
-        !         !     idwbuff(2)%beg:idwbuff(2)%end, idwbuff(3)%beg:idwbuff(3)%end, mom_idx%beg:mom_idx%end))
-        !         dqR_rsx_vf(idwbuff(1)%beg:idwbuff(1)%end, &
-        !             idwbuff(2)%beg:idwbuff(2)%end, idwbuff(3)%beg:idwbuff(3)%end, mom_idx%beg:mom_idx%end) => dqR_rsx_vf
-
-        !         if (n > 0) then
-        !             ! @:ALLOCATE(dqL_rsy_vf(idwbuff(2)%beg:idwbuff(2)%end, &
-        !             !     idwbuff(1)%beg:idwbuff(1)%end, idwbuff(3)%beg:idwbuff(3)%end, mom_idx%beg:mom_idx%end))
-        !             dqL_rsy_vf(idwbuff(2)%beg:idwbuff(2)%end, &
-        !                 idwbuff(1)%beg:idwbuff(1)%end, idwbuff(3)%beg:idwbuff(3)%end, mom_idx%beg:mom_idx%end) => dqL_rsy_vf
-        !             ! @:ALLOCATE(dqR_rsy_vf(idwbuff(2)%beg:idwbuff(2)%end, &
-        !             !     idwbuff(1)%beg:idwbuff(1)%end, idwbuff(3)%beg:idwbuff(3)%end, mom_idx%beg:mom_idx%end))
-        !             dqR_rsy_vf(idwbuff(2)%beg:idwbuff(2)%end, &
-        !                 idwbuff(1)%beg:idwbuff(1)%end, idwbuff(3)%beg:idwbuff(3)%end, mom_idx%beg:mom_idx%end) => dqR_rsy_vf
-        !         else
-        !             ! @:ALLOCATE(dqL_rsy_vf(idwbuff(1)%beg:idwbuff(1)%end, &
-        !             !     idwbuff(2)%beg:idwbuff(2)%end, idwbuff(3)%beg:idwbuff(3)%end, mom_idx%beg:mom_idx%end))
-        !             dqL_rsy_vf(idwbuff(1)%beg:idwbuff(1)%end, &
-        !                 idwbuff(2)%beg:idwbuff(2)%end, idwbuff(3)%beg:idwbuff(3)%end, mom_idx%beg:mom_idx%end) => dqL_rsy_vf
-        !             ! @:ALLOCATE(dqR_rsy_vf(idwbuff(1)%beg:idwbuff(1)%end, &
-        !             !     idwbuff(2)%beg:idwbuff(2)%end, idwbuff(3)%beg:idwbuff(3)%end, mom_idx%beg:mom_idx%end))
-        !             dqR_rsy_vf(idwbuff(1)%beg:idwbuff(1)%end, &
-        !                 idwbuff(2)%beg:idwbuff(2)%end, idwbuff(3)%beg:idwbuff(3)%end, mom_idx%beg:mom_idx%end) => dqR_rsy_vf
-
-        !         end if
-
-        !         if (p > 0) then
-        !             ! @:ALLOCATE(dqL_rsz_vf(idwbuff(3)%beg:idwbuff(3)%end, &
-        !             !     idwbuff(2)%beg:idwbuff(2)%end, idwbuff(1)%beg:idwbuff(1)%end, mom_idx%beg:mom_idx%end))
-        !             dqL_rsz_vf(idwbuff(3)%beg:idwbuff(3)%end, &
-        !                 idwbuff(2)%beg:idwbuff(2)%end, idwbuff(1)%beg:idwbuff(1)%end, mom_idx%beg:mom_idx%end) => dqL_rsz_vf
-        !             ! @:ALLOCATE(dqR_rsz_vf(idwbuff(3)%beg:idwbuff(3)%end, &
-        !             !     idwbuff(2)%beg:idwbuff(2)%end, idwbuff(1)%beg:idwbuff(1)%end, mom_idx%beg:mom_idx%end))
-        !             dqR_rsz_vf(idwbuff(3)%beg:idwbuff(3)%end, &
-        !                 idwbuff(2)%beg:idwbuff(2)%end, idwbuff(1)%beg:idwbuff(1)%end, mom_idx%beg:mom_idx%end) => dqR_rsz_vf
-        !         else
-        !             ! @:ALLOCATE(dqL_rsz_vf(idwbuff(1)%beg:idwbuff(1)%end, &
-        !             !     idwbuff(2)%beg:idwbuff(2)%end, idwbuff(3)%beg:idwbuff(3)%end, mom_idx%beg:mom_idx%end))
-        !             dqL_rsz_vf(idwbuff(1)%beg:idwbuff(1)%end, &
-        !                 idwbuff(2)%beg:idwbuff(2)%end, idwbuff(3)%beg:idwbuff(3)%end, mom_idx%beg:mom_idx%end) => dqL_rsz_vf
-        !             ! @:ALLOCATE(dqR_rsz_vf(idwbuff(1)%beg:idwbuff(1)%end, &
-        !             !     idwbuff(2)%beg:idwbuff(2)%end, idwbuff(3)%beg:idwbuff(3)%end, mom_idx%beg:mom_idx%end))
-        !             dqR_rsz_vf(idwbuff(1)%beg:idwbuff(1)%end, &
-        !                 idwbuff(2)%beg:idwbuff(2)%end, idwbuff(3)%beg:idwbuff(3)%end, mom_idx%beg:mom_idx%end) => dqR_rsz_vf
-
-        !         end if
-        !     end if
-        ! end if
-
-        ! ==================================================================
-
-        ! Allocation of gm_alphaK_n =====================================
         ! Allocation/Association of flux_n, flux_src_n, and flux_gsrc_n ===
         do i = 1, num_dims
 
             if (i == 1) then
                 do l = 1, sys_size
-                    ! @:ALLOCATE(flux_n(i)%vf(l)%sf( &
-                    !          & idwbuff(1)%beg:idwbuff(1)%end, &
-                    !          & idwbuff(2)%beg:idwbuff(2)%end, &
-                    !          & idwbuff(3)%beg:idwbuff(3)%end))
+                    !$acc exit data detach(flux_n(i)%vf(l)%sf)
                     flux_n(i)%vf(l)%sf(idwbuff(1)%beg:, &
                              idwbuff(2)%beg:, &
                              idwbuff(3)%beg:) => flux_n(i)%vf(l)%sf
-                    ! @:ALLOCATE(flux_gsrc_n(i)%vf(l)%sf( &
-                    !         & idwbuff(1)%beg:idwbuff(1)%end, &
-                    !         & idwbuff(2)%beg:idwbuff(2)%end, &
-                    !         & idwbuff(3)%beg:idwbuff(3)%end))
+                    !$acc enter data attach(flux_n(i)%vf(l)%sf)
+                    !$acc exit data detach(flux_gsrc_n(i)%vf(l)%sf)
                     flux_gsrc_n(i)%vf(l)%sf(idwbuff(1)%beg:, &
                             idwbuff(2)%beg:, &
                             idwbuff(3)%beg:) => flux_gsrc_n(i)%vf(l)%sf
+                    !$acc enter data attach(flux_gsrc_n(i)%vf(l)%sf)
                 end do
 
                 if (viscous .or. surface_tension) then
                     do l = mom_idx%beg, E_idx
-                        ! @:ALLOCATE(flux_src_n(i)%vf(l)%sf( &
-                        !          & idwbuff(1)%beg:idwbuff(1)%end, &
-                        !          & idwbuff(2)%beg:idwbuff(2)%end, &
-                        !          & idwbuff(3)%beg:idwbuff(3)%end))
+                        !$acc exit data detach(flux_src_n(i)%vf(l)%sf)
                         flux_src_n(i)%vf(l)%sf(idwbuff(1)%beg:, &
                                  idwbuff(2)%beg:, &
                                  idwbuff(3)%beg:) => flux_src_n(i)%vf(l)%sf
+                        !$acc enter data attach(flux_src_n(i)%vf(l)%sf)
                     end do
                 end if
 
-                ! @:ALLOCATE(flux_src_n(i)%vf(adv_idx%beg)%sf( &
-                !          & idwbuff(1)%beg:idwbuff(1)%end, &
-                !          & idwbuff(2)%beg:idwbuff(2)%end, &
-                !          & idwbuff(3)%beg:idwbuff(3)%end))
+                !$acc exit data detach(flux_src_n(i)%vf(adv_idx%beg)%sf)
                 flux_src_n(i)%vf(adv_idx%beg)%sf(idwbuff(1)%beg:, &
                          idwbuff(2)%beg:, &
                          idwbuff(3)%beg:) => flux_src_n(i)%vf(adv_idx%beg)%sf
+                !$acc enter data attach(flux_src_n(i)%vf(adv_idx%beg)%sf)
 
                 if (riemann_solver == 1) then
                     do l = adv_idx%beg + 1, adv_idx%end
-                        ! @:ALLOCATE(flux_src_n(i)%vf(l)%sf( &
-                        !          & idwbuff(1)%beg:idwbuff(1)%end, &
-                        !          & idwbuff(2)%beg:idwbuff(2)%end, &
-                        !          & idwbuff(3)%beg:idwbuff(3)%end))
+                        !$acc exit data detach(flux_src_n(i)%vf(l)%sf)
                         flux_src_n(i)%vf(l)%sf(idwbuff(1)%beg:, &
                                  idwbuff(2)%beg:, &
                                  idwbuff(3)%beg:) => flux_src_n(i)%vf(adv_idx%beg)%sf
+                        !$acc enter data attach(flux_src_n(i)%vf(l)%sf)
                     end do
                 end if
 
                 if (chemistry) then
                     do l = chemxb, chemxe
-                        ! @:ALLOCATE(flux_src_n(i)%vf(l)%sf( &
-                        !          & idwbuff(1)%beg:idwbuff(1)%end, &
-                        !          & idwbuff(2)%beg:idwbuff(2)%end, &
-                        !          & idwbuff(3)%beg:idwbuff(3)%end))
+                        !$acc exit data detach(flux_src_n(i)%vf(l)%sf)
                         flux_src_n(i)%vf(l)%sf(idwbuff(1)%beg:, &
                                  idwbuff(2)%beg:, &
                                  idwbuff(3)%beg:) => flux_src_n(i)%vf(l)%sf
+                        !$acc enter data attach(flux_src_n(i)%vf(l)%sf)
                     end do
                 end if
 
             else
                 do l = 1, sys_size
-                    ! @:ALLOCATE(flux_gsrc_n(i)%vf(l)%sf( &
-                    !     idwbuff(1)%beg:idwbuff(1)%end, &
-                    !     idwbuff(2)%beg:idwbuff(2)%end, &
-                    !     idwbuff(3)%beg:idwbuff(3)%end))
+                    !$acc exit data detach(flux_gsrc_n(i)%vf(l)%sf)
                     flux_gsrc_n(i)%vf(l)%sf(idwbuff(1)%beg:, &
                         idwbuff(2)%beg:, &
                         idwbuff(3)%beg:) => flux_gsrc_n(i)%vf(l)%sf
+                    !$acc enter data attach(flux_gsrc_n(i)%vf(l)%sf)
                 end do
             end if
 
             ! @:ACC_SETUP_VFs(flux_n(i), flux_src_n(i), flux_gsrc_n(i))
-
             if (i == 1) then
                 if (riemann_solver /= 1) then
                     do l = adv_idx%beg + 1, adv_idx%end
                         flux_src_n(i)%vf(l)%sf => flux_src_n(i)%vf(adv_idx%beg)%sf
-
                         !$acc enter data attach(flux_src_n(i)%vf(l)%sf)
                     end do
                 end if
@@ -1033,14 +904,12 @@ contains
                 do l = 1, sys_size
                     flux_n(i)%vf(l)%sf => flux_n(1)%vf(l)%sf
                     flux_src_n(i)%vf(l)%sf => flux_src_n(1)%vf(l)%sf
-
                     !$acc enter data attach(flux_n(i)%vf(l)%sf,flux_src_n(i)%vf(l)%sf)
                 end do
             end if
         end do
-
         ! END: Allocation/Association of flux_n, flux_src_n, and flux_gsrc_n ===
-
+        
         !$acc parallel loop collapse(4) gang vector default(present)
         do id = 1, num_dims
             do i = 1, sys_size
@@ -1054,7 +923,6 @@ contains
             end do
         end do
     end subroutine s_reinitialize_rhs_module
-
 
     subroutine s_compute_rhs(q_cons_vf, q_prim_vf, rhs_vf, pb, rhs_pb, mv, rhs_mv, t_step, time_avg)
 
@@ -1123,21 +991,7 @@ contains
         call s_populate_variables_buffers(q_prim_qp%vf, pb, mv)
         call nvtxEndRange
         call cpu_time(t_resume)
-
-        ! do i = 1, 1
-        !     do l = 0, p
-        !         do k = -buff_size, n + buff_size
-        !             do j = -buff_size+ 0, m + buff_size
-        !                 if (abs(q_prim_qp%vf(i)%sf(j, k, l)) < epsilon(0.0d0)) then
-        !                     write(*,*) "Zero value detected in q_prim_vf(", i, ")", j, idwbuff(1)%beg, idwbuff(1)%end
-        !                     error stop "Zero value detected in q_prim_vf"
-        !                 end if
-        !             end do
-        !         end do
-        !     end do
-        ! end do
-
-
+        
         if (cfl_dt) then
             if (mytime >= t_stop) return
         else
@@ -1277,18 +1131,6 @@ contains
                                                  flux_src_n(id))
             call nvtxEndRange
 
-            ! do i = 1, sys_size
-            !     do l = 0, p
-            !         do k = 0, n
-            !             do j = 0, m
-            !                 if (ieee_is_nan(rhs_vf(i)%sf(j, k, l))) then
-            !                     write(*,*) "NaN value detected in rhs_vf(", i, ")", j, idwbuff(1)%beg, idwbuff(1)%end
-            !                     error stop "NaN value detected in rhs_vf: after advection"
-            !                 end if
-            !             end do
-            !         end do
-            !     end do
-            ! end do
             ! RHS additions for hypoelasticity
             call nvtxStartRange("RHS-HYPOELASTICITY")
             if (hypoelasticity) call s_compute_hypoelastic_rhs(id, &
@@ -1411,20 +1253,6 @@ contains
             time_avg = 0d0
         end if
         ! ==================================================================
-
-        ! do i = 1, sys_size
-        !     do l = 0, p
-        !         do k = 0, n
-        !             do j = 0, m
-        !                 if (ieee_is_nan(rhs_vf(i)%sf(j, k, l))) then
-        !                     write(*,*) "NaN value detected in rhs_vf(", i, ")", j, idwbuff(1)%beg, idwbuff(1)%end
-        !                     error stop "NaN value detected in rhs_vf"
-        !                 end if
-        !             end do
-        !         end do
-        !     end do
-        ! end do
-
         call nvtxEndRange
 
     end subroutine s_compute_rhs
@@ -1484,15 +1312,7 @@ contains
                                                     (flux_n(1)%vf(j)%sf(k - 1, l, q) &
                                                      - flux_n(1)%vf(j)%sf(k, l, q))
                         end do
-                            ! ! NTBC 
-                            ! if (ieee_is_nan(rhs_vf(j)%sf(k, l, q))) then
-                            !     write(*,*) 'NaN detected in x-direction', k, m, dx(k)
-                            !     write(*,*) 'flux_n(1)%vf(j)%sf(k - 1, l, q) = ', flux_n(1)%vf(j)%sf(k - 1, l, q)
-                            !     write(*,*) 'flux_n(1)%vf(j)%sf(k, l, q) = ', flux_n(1)%vf(j)%sf(k, l, q)
-                            !     error stop "NaN detected in x-direction"
-                            ! end if
-                        ! end do
-                    end do
+                   end do
                 end do
             end do
 
@@ -1601,12 +1421,6 @@ contains
                                 rhs_vf(j)%sf(q, k, l) + 1d0/dy(k)* &
                                 (flux_n(2)%vf(j)%sf(q, k - 1, l) &
                                  - flux_n(2)%vf(j)%sf(q, k, l))
-                            ! if (ieee_is_nan(rhs_vf(j)%sf(q, k ,l))) then
-                            !     write(*,*) 'NaN detected in y-direction', k, n, dy(k)
-                            !     write(*,*) 'flux_n(1)%vf(j)%sf(q, k - 1, l) = ', flux_n(2)%vf(j)%sf(q, k - 1, l)
-                            !     write(*,*) 'flux_n(1)%vf(j)%sf(q, k, l) = ', flux_n(2)%vf(j)%sf(q, k, l)
-                            !     error stop "NaN detected in y-direction"
-                            ! end if
                         end do
                     end do
                 end do

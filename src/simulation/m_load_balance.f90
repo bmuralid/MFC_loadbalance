@@ -60,7 +60,7 @@ contains
 
         diff_start_idx = 0
         diff_count_idx = 0
-        mx = 2
+        mx = buff_size
         if (present(opt)) mx = opt
         ! get the std deviation of the proc_time array
         proc_time_std = 0.0d0
@@ -268,6 +268,14 @@ contains
         do i = 1, nsz
             max_diff = max(max_diff, abs(new_dist(i) - counts(i)))
         end do
+#ifdef DEBUG        
+        if (sum(new_dist) /= sum(counts)) then
+            print *, 'Error: sum(new_dist) /= sum(counts)'
+            print *, 'sum(new_dist) = ', sum(new_dist)
+            print *, 'sum(counts) = ', sum(counts)
+            error stop 'Error: sum(new_dist) /= sum(counts)'
+        end if
+#endif        
         deallocate (new_dist_real)
     end subroutine s_redistribute
 

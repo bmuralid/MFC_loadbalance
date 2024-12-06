@@ -1370,10 +1370,11 @@ contains
 
         if (relax) call s_infinite_relaxation_k(q_cons_ts(1)%vf)
 
+
         if (mod(t_step - t_step_start, t_step_save) == 0 .and. (t_step - t_step_start) > 0) then
             call s_perform_load_balance(time_avg)
         endif
-
+        
         t_step = t_step + 1
     end subroutine s_perform_time_step
 
@@ -1384,6 +1385,8 @@ contains
         call s_repopulate_variables_buffers(q_cons_ts(1)%vf, pb_ts(1)%sf, mv_ts(1)%sf)
 
         call s_mpi_loadbalance_computational_domain(time_avg)
+
+        call s_mpi_barrier()
 
         call s_reinitialize_global_parameters_module()
 
@@ -1399,7 +1402,6 @@ contains
 
         call s_reinitialize_weno_module()
 
-        call s_repopulate_variables_buffers(q_cons_ts(1)%vf, pb_ts(1)%sf, mv_ts(1)%sf)
 
         !> reset time avg
         time_avg = 0d0

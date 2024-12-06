@@ -280,14 +280,13 @@ contains
 
         do i = 1, num_ts
             do j = 1, sys_size
-                !!$acc update host(q_cons_ts(i)%vf(j)%sf)
-
+                !$acc update host(q_cons_ts(i)%vf(j)%sf)
+                !$acc exit data detach(q_cons_ts(i)%vf(j)%sf)
                 q_cons_ts(i)%vf(j)%sf(idwbuff(1)%beg:, &
                     idwbuff(2)%beg:, &
                     idwbuff(3)%beg:) => q_cons_ts(i)%vf(j)%sf
-                !!$acc update device(q_cons_ts(i)%vf(j)%sf)
-                !!$acc update host(q_cons_ts(i)%vf(j)%sf)
-                
+                !$acc enter data attach(q_cons_ts(i)%vf(j)%sf)
+                !$acc update device(q_cons_ts(i)%vf(j)%sf)
             end do
             ! @:ACC_SETUP_VFs(q_cons_ts(i))
         end do
@@ -298,6 +297,7 @@ contains
                     q_prim_ts(i)%vf(j)%sf(idwbuff(1)%beg:, &
                         idwbuff(2)%beg:, &
                         idwbuff(3)%beg:) => q_prim_ts(i)%vf(j)%sf
+                    !$acc enter data attach(q_prim_ts(i)%vf(j)%sf)
                 end do
             end do
         end if
@@ -306,6 +306,7 @@ contains
             q_prim_vf(i)%sf(idwbuff(1)%beg:, &
                 idwbuff(2)%beg:, &
                 idwbuff(3)%beg:) => q_prim_vf(i)%sf
+            !$acc enter data attach(q_prim_vf(i)%sf)
             ! @:ACC_SETUP_SFs(q_prim_vf(i))
         end do
 
@@ -357,7 +358,6 @@ contains
                     idwbuff(3)%beg:) => q_prim_vf(i)%sf
                 ! @:ACC_SETUP_SFs(q_prim_vf(i))
             end do
-
             q_prim_vf(T_idx)%sf(idwbuff(1)%beg:, &
                 idwbuff(2)%beg:, &
                 idwbuff(3)%beg:) => q_prim_vf(T_idx)%sf
@@ -370,7 +370,6 @@ contains
                 idwbuff(2)%beg:, &
                 idwbuff(3)%beg:, 1:, 1:) => pb_ts(1)%sf
             ! @:ACC_SETUP_SFs(pb_ts(1))
-
             pb_ts(2)%sf(idwbuff(1)%beg:, &
                 idwbuff(2)%beg:, &
                 idwbuff(3)%beg:, 1:, 1:) => pb_ts(2)%sf
@@ -413,12 +412,11 @@ contains
 
         end if
 
-        ! Allocating the cell-average RHS variables
-
         do i = 1, sys_size
             rhs_vf(i)%sf(-buff_size_lb(1):, &
                 -buff_size_lb(3):, &
                 -buff_size_lb(5):) => rhs_vf(i)%sf
+            !$acc enter data attach(rhs_vf(i)%sf)
             ! @:ACC_SETUP_SFs(rhs_vf(i))
         end do
     end subroutine s_reinitialize_time_steppers_module
