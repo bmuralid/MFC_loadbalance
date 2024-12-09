@@ -1370,23 +1370,26 @@ contains
 
         if (relax) call s_infinite_relaxation_k(q_cons_ts(1)%vf)
 
+        t_step = t_step + 1
 
         if (mod(t_step - t_step_start, t_step_save) == 0 .and. (t_step - t_step_start) > 0) then
             call s_perform_load_balance(time_avg)
         endif
         
-        t_step = t_step + 1
     end subroutine s_perform_time_step
 
     subroutine s_perform_load_balance(time_avg)
         real(kind(0d0)), intent(inout) :: time_avg
         integer :: i, l, k, j
+        integer :: istat
 
         call s_repopulate_variables_buffers(q_cons_ts(1)%vf, pb_ts(1)%sf, mv_ts(1)%sf)
 
-        call s_mpi_loadbalance_computational_domain(time_avg)
+        call s_mpi_loadbalance_computational_domain(time_avg, istat)
 
         call s_mpi_barrier()
+
+        if (istat > 0) return
 
         call s_reinitialize_global_parameters_module()
 
@@ -1402,9 +1405,6 @@ contains
 
         call s_reinitialize_weno_module()
 
-
-        !> reset time avg
-        time_avg = 0d0
 
     end subroutine s_perform_load_balance
 
@@ -1467,16 +1467,6 @@ contains
             write (1, '(I10, F15.8)') num_procs, io_time_final
             close (1)
 
-            ! write out the proc_io time data for all the processors
-            inquire (FILE='proc_time_data.dat', EXIST=file_exists)
-            if (file_exists) then
-                open (1, file='proc_time_data.dat', position='append', status='old')
-            else
-                open (1, file='proc_time_data.dat', status='new')
-                write (1, '(A10, A15)') "Ranks", "s/step"
-            end if
-            write (1, '(15F15.8)') (proc_time(i), i = 1, num_procs)
-            close (1)
         end if
 
     end subroutine s_save_performance_metrics

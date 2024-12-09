@@ -24,9 +24,10 @@ module m_load_balance
 contains
     !>  The goal of this subroutine is to rebalance the number of points in each direction among the processors
         !! based on the load factor such that the computational load is balanced among the processors.
-    subroutine s_mpi_loadbalance_computational_domain(time_avg, opt)
+    subroutine s_mpi_loadbalance_computational_domain(time_avg, istat, opt)
         real(kind(0d0)), intent(inout) :: time_avg
         integer, intent(in), optional :: opt
+        integer, intent(out) :: istat
 
         integer :: i, j, k, ierr
         integer :: tmp_val, mx
@@ -41,7 +42,24 @@ contains
         real(kind(0d0)) :: proc_time_std
         logical :: file_exists
         integer :: buff_min
-        integer, parameter  :: buff_min_threshold = 50
+        integer, parameter  :: buff_min_threshold = 12
+
+        call mpi_bcast_time_step_values(proc_time, time_avg)
+
+        if (proc_rank == 0) then
+            ! write out the proc_io time data for all the processors
+            inquire (FILE='proc_time_data.dat', EXIST=file_exists)
+            if (file_exists) then
+                open (1, file='proc_time_data.dat', position='append', status='old')
+            else
+                open (1, file='proc_time_data.dat', status='new')
+                write (1, '(A10, A15)') "Ranks", "s/step"
+            end if
+            write (1, '(15F15.8)') (proc_time(i), i = 0, num_procs-1)
+            close (1)
+        end if
+
+        istat = 1
 
         buff_min = minval(buff_size_lb)
 
@@ -52,11 +70,10 @@ contains
             call MPI_ALLREDUCE(buff_min, buff_min, 1, MPI_INTEGER, MPI_MIN, MPI_COMM_WORLD, ierr)
         end if
 
-        ! if (buff_min < buff_min_threshold) then
-        !     return
-        ! end if
+        if (buff_min < buff_min_threshold) then
+            return
+        end if
 
-        call mpi_bcast_time_step_values(proc_time, time_avg)
 
         diff_start_idx = 0
         diff_count_idx = 0
@@ -71,9 +88,9 @@ contains
 
         call MPI_BCAST(proc_time_std, 1, MPI_DOUBLE_PRECISION, 0, MPI_COMM_WORLD, ierr)
         ! if the std deviation is less than 10% of the average time, then return
-        if (proc_time_std <= 0.001d0) then
-            return
-        end if
+        ! if (proc_time_std <= 0.001d0) then
+        !     return
+        ! end if
 
         if (proc_rank == 0) then
             print *, 'Repartitioning the computational domain'
@@ -100,8 +117,10 @@ contains
 
             call s_redistribute(px, load_factor_x, mx, new_dist_x, new_displ_x)
             call s_redistribute(py, load_factor_y, mx, new_dist_y, new_displ_y)
+            istat = 0
         end if
-        call s_mpi_barrier()
+
+        call MPI_BCAST(istat, 1, MPI_DOUBLE_PRECISION, 0, MPI_COMM_WORLD, ierr)
 
         !> distribute m and n
         if (proc_rank == 0) then
@@ -165,6 +184,7 @@ contains
             close(1)
         end if
 
+        call s_mpi_barrier()
     end subroutine s_mpi_loadbalance_computational_domain
 
     subroutine s_redistribute(counts, lf, mx, new_dist, new_displ)

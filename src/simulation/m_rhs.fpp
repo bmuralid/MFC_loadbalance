@@ -935,13 +935,14 @@ contains
         real(kind(0d0)), intent(inout) :: time_avg
 
         real(kind(0d0)), dimension(0:m, 0:n, 0:p) :: nbub
-        real(kind(0d0)) :: t_start, t_finish, t_pause, t_resume
+        real(kind(0d0)) :: t_start, t_finish, t_pause, t_resume, t_last_save
         integer :: i, j, k, l, id !< Generic loop iterators
         integer :: s1, s2, s3 !< Direction indices
 
         call nvtxStartRange("COMPUTE-RHS")
 
-        call cpu_time(t_start)
+        ! call cpu_time(t_start)
+        t_start = MPI_WTIME()
         ! Association/Population of Working Variables ======================
         !$acc parallel loop collapse(4) gang vector default(present)
         do i = 1, sys_size
@@ -986,11 +987,13 @@ contains
             gm_alpha_qp%vf)
         call nvtxEndRange
 
-        call cpu_time(t_pause)
+        ! call cpu_time(t_pause)
+        t_pause = MPI_WTIME()
         call nvtxStartRange("RHS-COMMUNICATION")
         call s_populate_variables_buffers(q_prim_qp%vf, pb, mv)
         call nvtxEndRange
-        call cpu_time(t_resume)
+        ! call cpu_time(t_resume)
+        t_resume = MPI_WTIME()
         
         if (cfl_dt) then
             if (mytime >= t_stop) return
@@ -1244,11 +1247,16 @@ contains
             end do
         end if
 
-        call cpu_time(t_finish)
+        ! call cpu_time(t_finish)
+        t_finish = MPI_WTIME()
 
-        if (t_step >= 4) then
+        t_last_save = int((t_step - t_step_start)/ t_step_save) * t_step_save
+
+        if ((t_step - t_last_save) >= 4) then
             t_finish = t_finish - t_resume + t_pause
-            time_avg = (abs(t_finish - t_start) + (t_step - 4)*time_avg)/(t_step - 3)
+            time_avg = (abs(t_finish - t_start) + &
+                (t_step - 4 - t_last_save)*time_avg)/&
+                (t_step - 3 - t_last_save)
         else
             time_avg = 0d0
         end if
