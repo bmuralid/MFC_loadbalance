@@ -42,7 +42,7 @@ contains
         real(kind(0d0)) :: proc_time_std
         logical :: file_exists
         integer :: buff_min
-        integer, parameter  :: buff_min_threshold = 12
+        integer, parameter  :: buff_min_threshold = 1000
 
         call mpi_bcast_time_step_values(proc_time, time_avg)
 
@@ -173,6 +173,8 @@ contains
             else
                 open(1, file='repartitioning.dat', status='new')
                 write(1, '(I5)') num_procs
+                write(1, '(15I5)') proc_coords_x(1:num_procs)
+                write(1, '(15I5)') proc_coords_y(1:num_procs)
             endif
             write(1, '(A, I5)') 'buff min: ', buff_min
             write(1, '(A, F10.5)') 'std dev: ', proc_time_std
