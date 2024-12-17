@@ -70,9 +70,9 @@ contains
             call MPI_ALLREDUCE(buff_min, buff_min, 1, MPI_INTEGER, MPI_MIN, MPI_COMM_WORLD, ierr)
         end if
 
-        if (buff_min < buff_min_threshold) then
-            return
-        end if
+        ! if (buff_min < buff_min_threshold) then
+        !     return
+        ! end if
 
 
         diff_start_idx = 0

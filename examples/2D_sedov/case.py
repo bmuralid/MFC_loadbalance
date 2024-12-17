@@ -14,13 +14,13 @@ print(json.dumps({
     'x_domain%end'                 : 0.5,
     'y_domain%beg'                 : -0.5,
     'y_domain%end'                 : 0.5,
-    'm'                            : 500,
-    'n'                            : 500,
+    'm'                            : 767,
+    'n'                            : 767,
     'p'                            : 0,
     'dt'                           : 1e-07,
     't_step_start'                 : 0,
-    't_step_stop'                  : 1000,
-    't_step_save'                  : 100,
+    't_step_stop'                  : 10000,
+    't_step_save'                  : 250,
     # ==========================================================
 
     # Simulation Algorithm Parameters ==========================
