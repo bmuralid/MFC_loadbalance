@@ -406,6 +406,8 @@ contains
 
         real(kind(0d0)) :: time_avg !< Average time for the simulation
 
+        integer :: istat
+
 
         if (num_procs == 1 .and. parallel_io) then
             do i = 1, num_dims
@@ -768,7 +770,7 @@ contains
        else
            time_avg = 1.0d0
        endif
-       call s_mpi_loadbalance_computational_domain(time_avg=time_avg,opt=40)
+       call s_mpi_loadbalance_computational_domain(time_avg, istat, 40)
 #endif
 
     end subroutine s_mpi_decompose_computational_domain

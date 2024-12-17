@@ -941,8 +941,11 @@ contains
 
         call nvtxStartRange("COMPUTE-RHS")
 
-        ! call cpu_time(t_start)
+#ifdef MFC_MPI        
         t_start = MPI_WTIME()
+#else
+        call cpu_time(t_start)
+#endif        
         ! Association/Population of Working Variables ======================
         !$acc parallel loop collapse(4) gang vector default(present)
         do i = 1, sys_size
@@ -986,14 +989,19 @@ contains
             idwint, &
             gm_alpha_qp%vf)
         call nvtxEndRange
-
-        ! call cpu_time(t_pause)
+#ifdef MFC_MPI
         t_pause = MPI_WTIME()
+#else        
+        call cpu_time(t_pause)
+#endif        
         call nvtxStartRange("RHS-COMMUNICATION")
         call s_populate_variables_buffers(q_prim_qp%vf, pb, mv)
         call nvtxEndRange
-        ! call cpu_time(t_resume)
+#ifdef MFC_MPI        
         t_resume = MPI_WTIME()
+#else        
+        call cpu_time(t_resume)
+#endif        
         
         if (cfl_dt) then
             if (mytime >= t_stop) return
@@ -1247,8 +1255,11 @@ contains
             end do
         end if
 
-        ! call cpu_time(t_finish)
+#ifdef MFC_MPI        
         t_finish = MPI_WTIME()
+#else        
+        call cpu_time(t_finish)
+#endif        
 
         t_last_save = int((t_step - t_step_start)/ t_step_save) * t_step_save
 

@@ -70,9 +70,9 @@ contains
             call MPI_ALLREDUCE(buff_min, buff_min, 1, MPI_INTEGER, MPI_MIN, MPI_COMM_WORLD, ierr)
         end if
 
-        if (buff_min < buff_min_threshold) then
-            return
-        end if
+        ! if (buff_min < buff_min_threshold) then
+        !     return
+        ! end if
 
 
         diff_start_idx = 0
@@ -173,6 +173,8 @@ contains
             else
                 open(1, file='repartitioning.dat', status='new')
                 write(1, '(I5)') num_procs
+                write(1, '(15I5)') proc_coords_x(1:num_procs)
+                write(1, '(15I5)') proc_coords_y(1:num_procs)
             endif
             write(1, '(A, I5)') 'buff min: ', buff_min
             write(1, '(A, F10.5)') 'std dev: ', proc_time_std
