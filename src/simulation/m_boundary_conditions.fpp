@@ -222,8 +222,6 @@ contains
 
         integer :: bc_loc, bc_dir
 
-        ! Population of Buffers in x-direction =============================
-
         if (bc_x%beg > -3) then
             call s_mpi_sendrecv_variables_buffers( &
                 q_prim_vf, pb, mv, 1, -1)
@@ -257,7 +255,6 @@ contains
             call s_mpi_sendrecv_variables_buffers( &
                 q_prim_vf, pb, mv, 3, 1)
         endif
-        ! Population of Buffers in y-direction =============================
 
     end subroutine s_repopulate_variables_buffers
 

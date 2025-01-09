@@ -205,7 +205,7 @@ module m_global_parameters
     integer, allocatable, dimension(:) :: diff_start_idx !<
     integer, allocatable, dimension(:) :: diff_count_idx !<
 
-    real(kind(0d0)), allocatable, dimension(:) :: load_factor !<
+    ! real(kind(0d0)), allocatable, dimension(:) :: load_factor !<
     !! Load factor for each processor
 
     integer, allocatable, dimension(:) :: proc_counts_x, proc_counts_y, proc_counts_z !<
@@ -692,6 +692,9 @@ contains
             bc_${dir}$%grcbc_vel_out = .false.
         #:endfor
 
+        ! Load balancing parameters
+        buff_size_lb = 0
+
     end subroutine s_assign_default_values_to_user_inputs
 
     !>  The computation of parameters, the allocation of memory,
@@ -1003,7 +1006,7 @@ contains
         end if
 
 
-        buff_size_lb = 100
+        ! buff_size_lb = 100
 
         !$acc update device(buff_size_lb)
         do i = 1, sys_size
@@ -1154,10 +1157,16 @@ contains
          ! update the global variable buff_size_lb
         buff_size_lb(1) = buff_size_lb(1) + diff_start_idx(1)
         buff_size_lb(2) = buff_size_lb(2)  - diff_count_idx(1) - diff_start_idx(1)
-        buff_size_lb(3) = buff_size_lb(3) + diff_start_idx(2)
-        buff_size_lb(4) = buff_size_lb(4)  - diff_count_idx(2) - diff_start_idx(2)
+        if (n > 0) then
+            buff_size_lb(3) = buff_size_lb(3) + diff_start_idx(2)
+            buff_size_lb(4) = buff_size_lb(4)  - diff_count_idx(2) - diff_start_idx(2)
+        endif
+
+        if (p > 0) then
+            buff_size_lb(5) = buff_size_lb(5) + diff_start_idx(3)
+            buff_size_lb(6) = buff_size_lb(6)  - diff_count_idx(3) - diff_start_idx(3)
+        endif
         !$acc update device(buff_size_lb)
-       
 
         ! Configuring Coordinate Direction Indexes =========================
         idwint(1)%beg = 0; idwint(2)%beg = 0; idwint(3)%beg = 0
@@ -1225,7 +1234,7 @@ contains
             allocate ( proc_coords_${dir}$(1:num_procs) )
         #:endfor
 
-        allocate (load_factor(1:num_procs)) 
+        ! allocate (load_factor(1:num_procs)) 
 
         #:for dir in {'x', 'y', 'z'}
             allocate (proc_counts_${dir}$(1:num_procs))
@@ -1269,7 +1278,7 @@ contains
         end if
 
         deallocate (proc_coords)
-        deallocate (load_factor)
+        ! deallocate (load_factor)
         #:for dir in {'x', 'y', 'z'}
             deallocate (proc_coords_${dir}$)
             deallocate (proc_counts_${dir}$)

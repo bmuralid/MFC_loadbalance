@@ -375,6 +375,8 @@ contains
             #:endfor
         end do
 
+        call MPI_BCAST(buff_size_lb, 6, MPI_INTEGER, 0, MPI_COMM_WORLD, ierr)
+
 #endif
 
     end subroutine s_mpi_bcast_user_inputs
@@ -403,11 +405,6 @@ contains
             !! after the majority is divided up among the available processors
 
         integer :: i, j !< Generic loop iterators
-
-        real(kind(0d0)) :: time_avg !< Average time for the simulation
-
-        integer :: istat
-
 
         if (num_procs == 1 .and. parallel_io) then
             do i = 1, num_dims
@@ -602,7 +599,9 @@ contains
                 ! Initial estimate of optimal processor topology
                 num_procs_x = 1
                 num_procs_y = num_procs
+                num_procs_z = 1
                 ierr = -1
+                proc_coords_z = 0
 
                 ! Benchmarking the quality of this initial guess
                 tmp_num_procs_x = num_procs_x
@@ -710,6 +709,10 @@ contains
 
             ! Optimal processor topology
             num_procs_x = num_procs
+            num_procs_y = 1
+            num_procs_z = 1
+            proc_coords_y = 0
+            proc_coords_z = 0
 
             ! Creating new communicator using the Cartesian topology
             call MPI_CART_CREATE(MPI_COMM_WORLD, 1, (/num_procs_x/), &
@@ -764,13 +767,7 @@ contains
         call MPI_ALLGATHER(proc_coords(1), 1, MPI_INTEGER, proc_coords_x, 1, MPI_INTEGER, MPI_COMM_WORLD, ierr)
        ! ==================================================================
 
-       !> Initial call to redistribute the computational domain
-       if (proc_coords_x(proc_rank + 1) == 0 .and. proc_coords_y(proc_rank + 1) == 0 ) then
-           time_avg = 4.0d0
-       else
-           time_avg = 1.0d0
-       endif
-       call s_mpi_loadbalance_computational_domain(time_avg, istat, 40)
+    call s_mpi_loadbalance_init()
 #endif
 
     end subroutine s_mpi_decompose_computational_domain

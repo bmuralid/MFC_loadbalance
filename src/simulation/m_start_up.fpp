@@ -167,7 +167,7 @@ contains
             k_x, k_y, k_z, w_x, w_y, w_z, p_x, p_y, p_z, &
             g_x, g_y, g_z, n_start, t_save, t_stop, &
             cfl_adap_dt, cfl_const_dt, cfl_target, &
-            viscous, surface_tension
+            viscous, surface_tension, buff_size_lb
 
         ! Checking that an input file has been provided by the user. If it
         ! has, then the input file is read in, otherwise, simulation exits.
@@ -1373,7 +1373,9 @@ contains
         t_step = t_step + 1
 
         if (mod(t_step - t_step_start, t_step_save) == 0 .and. (t_step - t_step_start) > 0) then
+            call nvtxStartRange("LOAD-BALANCE")
             call s_perform_load_balance(time_avg)
+            call nvtxEndRange
         endif
         
     end subroutine s_perform_time_step
@@ -1387,13 +1389,9 @@ contains
 
         call s_mpi_loadbalance_computational_domain(time_avg, istat)
 
-        call s_mpi_barrier()
-
         if (istat > 0) return
 
         call s_reinitialize_global_parameters_module()
-
-        ! call s_reinitialize_mpi_proxy_module()
 
         call s_reinitialize_grid()
 
@@ -1404,7 +1402,6 @@ contains
         call s_populate_grid_variables_buffers()
 
         call s_reinitialize_weno_module()
-
 
     end subroutine s_perform_load_balance
 

@@ -794,34 +794,46 @@ contains
             do i = 1, num_dims
 
                 do l = mom_idx%beg, mom_idx%end
+                    !$acc exit data detach(dqL_prim_dx_n(i)%vf(l)%sf)
                     dqL_prim_dx_n(i)%vf(l)%sf(idwbuff(1)%beg:, &
                         idwbuff(2)%beg:, &
                         idwbuff(3)%beg:) => dqL_prim_dx_n(i)%vf(l)%sf
+                    !$acc enter data attach(dqL_prim_dx_n(i)%vf(l)%sf)
+                    !$acc exit data detach(dqR_prim_dx_n(i)%vf(l)%sf)
                     dqR_prim_dx_n(i)%vf(l)%sf(idwbuff(1)%beg:, &
                         idwbuff(2)%beg:, &
                         idwbuff(3)%beg:) => dqR_prim_dx_n(i)%vf(l)%sf
+                    !$acc enter data attach(dqR_prim_dx_n(i)%vf(l)%sf)
                 end do
 
                 if (n > 0) then
                     do l = mom_idx%beg, mom_idx%end
+                        !$acc exit data detach(dqL_prim_dy_n(i)%vf(l)%sf)
                         dqL_prim_dy_n(i)%vf(l)%sf(idwbuff(1)%beg:, &
                             idwbuff(2)%beg:, &
                             idwbuff(3)%beg:) => dqL_prim_dy_n(i)%vf(l)%sf
+                        !$acc enter data attach(dqL_prim_dy_n(i)%vf(l)%sf)
+                        !$acc exit data detach(dqR_prim_dy_n(i)%vf(l)%sf)
                         dqR_prim_dy_n(i)%vf(l)%sf(idwbuff(1)%beg:, &
                             idwbuff(2)%beg:, &
                             idwbuff(3)%beg:) => dqR_prim_dy_n(i)%vf(l)%sf
+                        !$acc enter data attach(dqR_prim_dy_n(i)%vf(l)%sf)
                     end do
                 end if
 
                 if (p > 0) then
                     do l = mom_idx%beg, mom_idx%end
+                        !$acc exit data detach(dqL_prim_dz_n(i)%vf(l)%sf)
                         dqL_prim_dz_n(i)%vf(l)%sf(idwbuff(1)%beg:, &
                             idwbuff(2)%beg:, &
                             idwbuff(3)%beg:) => dqL_prim_dz_n(i)%vf(l)%sf
+                        !$acc enter data attach(dqL_prim_dz_n(i)%vf(l)%sf)
 
+                        !$acc exit data detach(dqR_prim_dz_n(i)%vf(l)%sf)
                         dqR_prim_dz_n(i)%vf(l)%sf(idwbuff(1)%beg:, &
                             idwbuff(2)%beg:, &
                             idwbuff(3)%beg:) => dqR_prim_dz_n(i)%vf(l)%sf
+                        !$acc enter data attach(dqR_prim_dz_n(i)%vf(l)%sf)
                     end do
                 end if
 

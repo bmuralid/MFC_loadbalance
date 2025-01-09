@@ -277,7 +277,6 @@ contains
 
         integer :: i, j !< Generic loop iterators
 
-
         do i = 1, num_ts
             do j = 1, sys_size
                 !$acc update host(q_cons_ts(i)%vf(j)%sf)
@@ -294,6 +293,7 @@ contains
         if (probe_wrt) then
             do i = 0, 3
                 do j = 1, sys_size
+                    !$acc exit data detach(q_prim_ts(i)%vf(j)%sf)
                     q_prim_ts(i)%vf(j)%sf(idwbuff(1)%beg:, &
                         idwbuff(2)%beg:, &
                         idwbuff(3)%beg:) => q_prim_ts(i)%vf(j)%sf
@@ -303,6 +303,7 @@ contains
         end if
 
         do i = 1, adv_idx%end
+            !$acc exit data detach(q_prim_vf(i)%sf)
             q_prim_vf(i)%sf(idwbuff(1)%beg:, &
                 idwbuff(2)%beg:, &
                 idwbuff(3)%beg:) => q_prim_vf(i)%sf
@@ -312,15 +313,19 @@ contains
 
         if (bubbles) then
             do i = bub_idx%beg, bub_idx%end
+                !$acc exit data detach(q_prim_vf(i)%sf)
                 q_prim_vf(i)%sf(idwbuff(1)%beg:, &
                     idwbuff(2)%beg:, &
                     idwbuff(3)%beg:) => q_prim_vf(i)%sf
+                !$acc enter data attach(q_prim_vf(i)%sf)
                 ! @:ACC_SETUP_SFs(q_prim_vf(i))
             end do
             if (adv_n) then
+                !$acc exit data detach(q_prim_vf(n_idx)%sf)
                 q_prim_vf(n_idx)%sf(idwbuff(1)%beg:, &
                     idwbuff(2)%beg:, &
                     idwbuff(3)%beg:) => q_prim_vf(n_idx)%sf
+                !$acc enter data attach(q_prim_vf(n_idx)%sf)
                 ! @:ACC_SETUP_SFs(q_prim_vf(n_idx))
             end if
         end if
@@ -328,91 +333,84 @@ contains
         if (hypoelasticity) then
 
             do i = stress_idx%beg, stress_idx%end
+                !$acc exit data detach(q_prim_vf(i)%sf)
                 q_prim_vf(i)%sf(idwbuff(1)%beg:, &
                     idwbuff(2)%beg:, &
                     idwbuff(3)%beg:) => q_prim_vf(i)%sf
+                !$acc enter data attach(q_prim_vf(i)%sf)
                 ! @:ACC_SETUP_SFs(q_prim_vf(i))
             end do
         end if
 
         if (model_eqns == 3) then
             do i = internalEnergies_idx%beg, internalEnergies_idx%end
+                !$acc exit data detach(q_prim_vf(i)%sf)
                 q_prim_vf(i)%sf(idwbuff(1)%beg:, &
                     idwbuff(2)%beg:, &
                     idwbuff(3)%beg:) => q_prim_vf(i)%sf
+                !$acc enter data attach(q_prim_vf(i)%sf)
                 ! @:ACC_SETUP_SFs(q_prim_vf(i))
             end do
         end if
 
         if (surface_tension) then
+            !$acc exit data detach(q_prim_vf(c_idx)%sf)
             q_prim_vf(c_idx)%sf(idwbuff(1)%beg:, &
                 idwbuff(2)%beg:, &
                 idwbuff(3)%beg:) => q_prim_vf(c_idx)%sf
+            !$acc enter data attach(q_prim_vf(c_idx)%sf)
             ! @:ACC_SETUP_SFs(q_prim_vf(c_idx))
         end if
 
         if (chemistry) then
             do i = chemxb, chemxe
+                !$acc exit data detach(q_prim_vf(i)%sf)
                 q_prim_vf(i)%sf(idwbuff(1)%beg:, &
                     idwbuff(2)%beg:, &
                     idwbuff(3)%beg:) => q_prim_vf(i)%sf
+                !$acc enter data attach(q_prim_vf(i)%sf)
                 ! @:ACC_SETUP_SFs(q_prim_vf(i))
             end do
+            !$acc exit data detach(q_prim_vf(T_idx)%sf)
             q_prim_vf(T_idx)%sf(idwbuff(1)%beg:, &
                 idwbuff(2)%beg:, &
                 idwbuff(3)%beg:) => q_prim_vf(T_idx)%sf
+            !$acc enter data attach(q_prim_vf(T_idx)%sf)
             ! @:ACC_SETUP_SFs(q_prim_vf(T_idx))
         end if
 
         !Initialize bubble variables pb and mv at all quadrature nodes for all R0 bins
-        if (qbmm .and. (.not. polytropic)) then
+        if (qbmm) then
+            !$acc exit data detach(pb_ts(1)%sf)
             pb_ts(1)%sf(idwbuff(1)%beg:, &
                 idwbuff(2)%beg:, &
                 idwbuff(3)%beg:, 1:, 1:) => pb_ts(1)%sf
+            !$acc enter data attach(pb_ts(1)%sf)
             ! @:ACC_SETUP_SFs(pb_ts(1))
+            !$acc exit data detach(pb_ts(2)%sf)
             pb_ts(2)%sf(idwbuff(1)%beg:, &
                 idwbuff(2)%beg:, &
                 idwbuff(3)%beg:, 1:, 1:) => pb_ts(2)%sf
+            !$acc enter data attach(pb_ts(2)%sf)
             ! @:ACC_SETUP_SFs(pb_ts(2))
 
-        else if (qbmm .and. polytropic) then
-            pb_ts(1)%sf(idwbuff(1)%beg:, &
-                idwbuff(2)%beg:, &
-                idwbuff(3)%beg:, 1:, 1:) => pb_ts(1)%sf
-            ! @:ACC_SETUP_SFs(pb_ts(1))
-
-            pb_ts(2)%sf(idwbuff(1)%beg:, &
-                idwbuff(2)%beg:, &
-                idwbuff(3)%beg:, 1:, 1:) => pb_ts(2)%sf
-            ! @:ACC_SETUP_SFs(pb_ts(2))
-
-        end if
-
-        if (qbmm .and. (.not. polytropic)) then
+            !$acc exit data detach(mv_ts(1)%sf)
             mv_ts(1)%sf(idwbuff(1)%beg:, &
                 idwbuff(2)%beg:, &
                 idwbuff(3)%beg:, 1:, 1:) => mv_ts(1)%sf
+            !$acc enter data attach(mv_ts(1)%sf)
             ! @:ACC_SETUP_SFs(mv_ts(1))
 
+            !$acc exit data detach(mv_ts(2)%sf)
             mv_ts(2)%sf(idwbuff(1)%beg:, &
                 idwbuff(2)%beg:, &
                 idwbuff(3)%beg:, 1:, 1:) => mv_ts(2)%sf
+            !$acc enter data attach(mv_ts(2)%sf)
             ! @:ACC_SETUP_SFs(mv_ts(2))
-
-        else if (qbmm .and. polytropic) then
-            mv_ts(1)%sf(idwbuff(1)%beg:, &
-                idwbuff(2)%beg:, &
-                idwbuff(3)%beg:, 1:, 1:) => mv_ts(1)%sf
-            ! @:ACC_SETUP_SFs(mv_ts(1))
-
-            mv_ts(2)%sf(idwbuff(1)%beg:, &
-                idwbuff(2)%beg:, &
-                idwbuff(3)%beg:, 1:, 1:) => mv_ts(2)%sf
-            ! @:ACC_SETUP_SFs(mv_ts(2))
-
         end if
 
         do i = 1, sys_size
+            !$acc exit data detach(rhs_vf(i)%sf)
             rhs_vf(i)%sf(-buff_size_lb(1):, &
                 -buff_size_lb(3):, &
                 -buff_size_lb(5):) => rhs_vf(i)%sf
