@@ -101,18 +101,6 @@ contains
 
         istat = 1
 
-        buff_min = minval(buff_size_lb)
-
-        ! get the minimum buff_min across all processes 
-        if (proc_rank == 0) then
-            call MPI_ALLREDUCE(MPI_IN_PLACE, buff_min, 1, MPI_INTEGER, MPI_MIN, MPI_COMM_WORLD, ierr)
-        else
-            call MPI_ALLREDUCE(buff_min, buff_min, 1, MPI_INTEGER, MPI_MIN, MPI_COMM_WORLD, ierr)
-        end if
-
-        if (buff_min < buff_min_threshold .and. .not.present(opt)) then
-            return
-        end if
         call mpi_bcast_time_step_values(proc_time, time_avg)
 
         if (proc_rank == 0) then
@@ -127,6 +115,19 @@ contains
             end if
             write (1, '(15F15.8)') (proc_time(i), i = 0, num_procs-1)
             close (1)
+        end if
+
+        buff_min = minval(buff_size_lb)
+
+        ! get the minimum buff_min across all processes 
+        if (proc_rank == 0) then
+            call MPI_ALLREDUCE(MPI_IN_PLACE, buff_min, 1, MPI_INTEGER, MPI_MIN, MPI_COMM_WORLD, ierr)
+        else
+            call MPI_ALLREDUCE(buff_min, buff_min, 1, MPI_INTEGER, MPI_MIN, MPI_COMM_WORLD, ierr)
+        end if
+
+        if (buff_min < buff_min_threshold .and. .not.present(opt)) then
+            return
         end if
 
         diff_start_idx = 0
