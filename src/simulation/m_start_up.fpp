@@ -199,7 +199,11 @@ contains
             n_glb = n
             p_glb = p
 
+            ! needed since only the first index is read
+            buff_size_lb(:) = buff_size_lb(1)
+
             if (cfl_adap_dt .or. cfl_const_dt) cfl_dt = .true.
+
 
         else
             call s_mpi_abort(trim(file_path)//' is missing. Exiting ...')
@@ -1392,6 +1396,8 @@ contains
         if (istat > 0) return
 
         call s_reinitialize_global_parameters_module()
+
+        call s_reinitialize_mpi_proxy_module()
 
         call s_reinitialize_grid()
 

@@ -228,6 +228,7 @@ SIMULATION.update({
     'low_Mach': ParamType.INT,
     'surface_tension': ParamType.LOG,
     'viscous': ParamType.LOG,
+    'buff_size_lb': ParamType.INT,
 })
 
 for var in [ 'diffusion', 'reactions' ]:

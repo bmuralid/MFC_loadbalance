@@ -4,6 +4,7 @@
     real(kind(0d0)) :: rhoH, rhoL, pRef, pInt, h, lam, wl, amp, intH, alph
 
     real(kind(0d0)) :: eps
+    real(kind(0d0)) :: r
 
     eps = 1e-9
 #:enddef
@@ -42,7 +43,14 @@
             pInt = pref + rhoH*9.81*(1.2 - intH)
             q_prim_vf(E_idx)%sf(i, j, k) = pInt + rhoL*9.81*(intH - y_cc(j))
         end if
+    case (305)
 
+        r = dsqrt(x_cc(i)**2 + y_cc(j)**2 + z_cc(k)**2)
+        q_prim_vf(E_idx)%sf(i, j, k) = 0.67e-4
+        q_prim_vf(contxb)%sf(i, j, k) = 1.0
+        if ( r < 0.007d0) then
+            q_prim_vf(E_idx)%sf(i, j, k) = 1.85e6
+        endif
         ! Put your variable assignments here
     case default
         call s_int_to_str(patch_id, iStr)

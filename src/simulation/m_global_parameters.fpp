@@ -692,7 +692,7 @@ contains
             bc_${dir}$%grcbc_vel_out = .false.
         #:endfor
 
-        ! Load balancing parameters
+        ! ! Load balancing parameters
         buff_size_lb = 0
 
     end subroutine s_assign_default_values_to_user_inputs

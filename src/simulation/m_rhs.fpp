@@ -2358,8 +2358,14 @@ contains
             is1%end = is1%end - weno_polyn
             is1%beg = is1%beg + buff_size_lb(1)
             is1%end = is1%end - buff_size_lb(2)
-            is2%beg = is2%beg + buff_size_lb(3)
-            is2%end = is2%end - buff_size_lb(4)
+            if (n > 0) then
+                is2%beg = is2%beg + buff_size_lb(3)
+                is2%end = is2%end - buff_size_lb(4)
+            end if
+            if (p > 0) then
+                is3%beg = is3%beg + buff_size_lb(5)
+                is3%end = is3%end - buff_size_lb(6)
+            end if
             s1 = startx ; s2 = starty ; s3 = startz
 
         elseif (norm_dir == 2) then
@@ -2370,12 +2376,22 @@ contains
             is1%end = is1%end - buff_size_lb(4)
             is2%beg = is2%beg + buff_size_lb(1)
             is2%end = is2%end - buff_size_lb(2)
+            if (p > 0) then
+                is3%beg = is3%beg + buff_size_lb(5)
+                is3%end = is3%end - buff_size_lb(6)
+            end if
            s1 = starty ; s2 = startx ; s3 = startz
 
         else
             is1 = idwbuff(3); is2 = idwbuff(2); is3 = idwbuff(1)
             weno_dir = 3; is1%beg = is1%beg + weno_polyn
             is1%end = is1%end - weno_polyn
+            is1%beg = is1%beg + buff_size_lb(5)
+            is1%end = is1%end - buff_size_lb(6)
+            is2%beg = is2%beg + buff_size_lb(3)
+            is2%end = is2%end - buff_size_lb(4)
+            is3%beg = is3%beg + buff_size_lb(1)
+            is3%end = is3%end - buff_size_lb(2)
             s1 = startz ; s2 = starty ; s3 = startx
 
         end if

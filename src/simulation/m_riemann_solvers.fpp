@@ -2629,7 +2629,7 @@ contains
 
         if (p == 0) return
 
-        is1%beg = -1 - buff_size_lb(5); is2%beg = 0 + buff_size_lb(3); is3%beg = 0 + buff_size_lb(1)
+        is1%beg = -1 - buff_size_lb(5); is2%beg = 0 - buff_size_lb(3); is3%beg = 0 - buff_size_lb(1)
         is1%end = p + buff_size_lb(6); is2%end = n + buff_size_lb(4); is3%end = m + buff_size_lb(2)
 
         @:ALLOCATE(flux_rsz_vf(is1%beg:is1%end, &
